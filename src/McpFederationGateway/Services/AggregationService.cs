@@ -25,6 +25,11 @@ public class AggregationService : IAggregationService
             var serverName = serverConfig.Name;
             try
             {
+                if (serverConfig.Mode.ToLower() == "federated")
+                {
+                    continue;
+                }
+
                 var client = await _clientFactory.GetClientAsync(serverConfig);
                 var toolsResult = await client.ListToolsAsync();
                 var tools = toolsResult.Tools;
