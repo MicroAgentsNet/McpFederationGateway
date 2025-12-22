@@ -19,10 +19,10 @@ jobs:
           dotnet-version: 10.0.x
 
       - name: Restore
-        run: dotnet restore McpFederationGateway.sln
+        run: dotnet restore McpFederationGateway.slnx
 
       - name: Build
-        run: dotnet build McpFederationGateway.sln --configuration Release --no-restore
+        run: dotnet build McpFederationGateway.slnx --configuration Release --no-restore
 
       - name: Test
-        run: dotnet test McpFederationGateway.sln --configuration Release --no-build --verbosity minimal
+        run: dotnet test McpFederationGateway.slnx --configuration Release --no-build --verbosity minimal
