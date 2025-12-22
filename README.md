@@ -38,22 +38,27 @@ In **Federated Mode**, the gateway exposes two primary tools to interact with th
 
 ---
 
-## 🚀 Getting Started
+### 🚀 Running with DNX
 
-### Prerequisites
+The `McpFederationGateway` is designed to be executed using **dnx**, a lightweight runner for .NET-based MCP servers.
 
-- **.NET 10 SDK**
-- Downstream MCP servers (Stdio-based `npx`, `python`, etc., or SSE-based URLs)
+```bash
+# To run the latest version from NuGet
+dnx McpFederationGateway --transport stdio
 
-### Installation
+# To run a specific version
+dnx McpFederationGateway@1.0.0 --transport stdio
+```
+
+For development and local execution from source:
 
 ```bash
 # Clone the repository
 git clone https://github.com/MicroAgentsNet/McpFederationGateway.git
 cd McpFederationGateway
 
-# Build the project
-dotnet build
+# Run using dotnet run
+dotnet run -- --transport stdio
 ```
 
 ### Configuration
