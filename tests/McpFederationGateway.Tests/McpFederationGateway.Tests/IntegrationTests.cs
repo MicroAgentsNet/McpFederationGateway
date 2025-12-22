@@ -29,7 +29,9 @@ public class IntegrationTests
         var pwd = Directory.GetCurrentDirectory();
         TestContext.Progress.WriteLine($"PWD: {pwd}");
         
-        _configPath = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "../../../../../tests/test_config.json"));
+        // Depth: tests/McpFederationGateway.Tests/McpFederationGateway.Tests/bin/Debug/net10.0/
+        // We need 6 levels up to reach solution root.
+        _configPath = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "../../../../../../tests/test_config.json"));
         
         TestContext.Progress.WriteLine($"Config Path: {_configPath}, Exists: {File.Exists(_configPath)}");
         if (File.Exists(_configPath))
@@ -48,8 +50,8 @@ public class IntegrationTests
         buildConfig = "Release";
         #endif
         
-        // Relative path to DummyServer dll
-        var serverDll = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, $"../../../../DummyServer/bin/{buildConfig}/net10.0/DummyServer.dll"));
+        // Relative path to DummyServer dll from solution root
+        var serverDll = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, $"../../../../../../tests/DummyServer/bin/{buildConfig}/net10.0/DummyServer.dll"));
         
         if (!File.Exists(serverDll))
         {
