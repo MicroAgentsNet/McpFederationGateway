@@ -1,10 +1,108 @@
-# McpFederationGateway
+# 🌐 MCP Federation Gateway
 
-MCP federated gateway is a starting point. It is an MCP server, that federates access to all MCPs. It is a reverse proxy to all MCPs, with additional features like authentication, authorization, rate limiting, etc. Everything is in configuration. Configuration is for user and workspace levels (with user profile acting as default). The most important feature is that it can work both locally (stdio) and remotely for enterprises (https). The ultimate feature is how MCPs are proxied: directly (exposes all tools with all docs as-is) and federated (summarizes what each thing does). In the future it will allow to pass-through authentication, provide policies for tools, central MCP configuration, etc.
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Build Status](https://img.shields.io/badge/Build-Success-brightgreen.svg)]()
+[![.NET](https://img.shields.io/badge/.NET-10.0-blue.svg)](https://dotnet.microsoft.com/download/dotnet/10.0)
+[![AOT](https://img.shields.io/badge/NativeAOT-Supported-orange.svg)]()
 
-## Community Pledge
+> The ultimate federated entry point for the Model Context Protocol (MCP) ecosystem.
+
+`McpFederationGateway` is a high-performance, **Native AOT-compiled** .NET 10 service that acts as a reverse proxy and aggregator for multiple upstream MCP servers. It provides a unified interface for agents, reduces context consumption through smart aggregation, and bridges the gap between local (Stdio) and remote (SSE/HTTP) environments.
+
+---
+
+## ✨ Key Features
+
+- **🔄 Federation & Aggregation**: Combines multiple downstream MCP servers into a single, unified tool catalog.
+- **🛣️ Intelligent Routing**: Automatically dispatches tool calls and resource requests to the correct downstream server based on namespacing or meta-tool parameters.
+- **🔌 Dual-Transport Bridge**:
+  - Host it locally via **Stdio** for integration with standard MCP clients (like Claude Desktop).
+  - Expose it remotely via **SSE/HTTP** for enterprise or cloud-based agentic workflows.
+- **🧠 Federated Mode (Context Optimized)**:
+  - Instead of overwhelming the LLM context with hundreds of tools, exposes only two powerful meta-tools: `how_to_use` and `call`.
+- **🛠️ Direct Mode (Legacy Compatibility)**: Exposes all tools from downstream servers with optional namespacing to prevent collisions.
+- **🚀 Native AOT Performance**: Compiled to native code for ultra-fast startup and minimal footprint.
+- **⚙️ Hierarchical Configuration**: Merges global user defaults with workspace-specific configurations.
+
+---
+
+## 🛠️ Meta-Tools
+
+In **Federated Mode**, the gateway exposes two primary tools to interact with the entire ecosystem:
+
+| Tool         | Description                                                                                                  |
+| :----------- | :----------------------------------------------------------------------------------------------------------- |
+| `how_to_use` | Provides documentation, summaries, and usage guides for any aggregated package or server using the host LLM. |
+| `call`       | Dynamically invokes any tool on any federated server by specifying `server_name` and `tool_name`.            |
+
+---
+
+## 🚀 Getting Started
+
+### Prerequisites
+
+- **.NET 10 SDK**
+- Downstream MCP servers (Stdio-based `npx`, `python`, etc., or SSE-based URLs)
+
+### Installation
+
+```bash
+# Clone the repository
+git clone https://github.com/MicroAgentsNet/McpFederationGateway.git
+cd McpFederationGateway
+
+# Build the project
+dotnet build
+```
+
+### Configuration
+
+The gateway looks for configuration in `~/.microagents/config.json` and local workspace roots.
+
+**Example `config.json`**:
+
+```json
+{
+  "servers": [
+    {
+      "name": "weather",
+      "transport": "stdio",
+      "command": "npx",
+      "arguments": ["-y", "@modelcontextprotocol/server-weather"]
+    },
+    {
+      "name": "docs",
+      "transport": "http",
+      "url": "https://mcp.example.com/sse"
+    }
+  ]
+}
+```
+
+---
+
+## 📐 Architecture
+
+Built on the official [MCP C# SDK](https://github.com/modelcontextprotocol/csharp-sdk), the gateway uses a decoupled DI-based architecture:
+
+- **AggregationService**: Discovers and merges downstream capabilities.
+- **RouterService**: Handles protocol-level dispatching and tool mapping.
+- **McpClientFactory**: Manages the lifecycle of standard and SSE transports.
+- **ConfigurationService**: Handles the hierarchical merging of user and root settings.
+
+---
+
+## 🤝 Community Pledge
+
+We are committed to the long-term health and openness of the MicroAgents ecosystem.
 
 - **MIT license stays forever.**
-- **Monetization**: support, donations, sponsorships, custom development, N-2 version commercial features become community features.
-- **Community code** does not depend or include any commercial code. If it does, then this feature becomes community feature.
-- **No warranties**.
+- **Monetization**: We may offer paid support, donations, sponsorships, or custom development. However, commercial features follow an "N-2" policy: features from two versions ago always become part of the community version.
+- **Community Code**: Our open-source code will never depend on or include commercial code. If it does, those features will be promoted to the community tier.
+- **No Warranties**: This software is provided "as-is" without warranty of any kind.
+
+---
+
+## 📄 License
+
+This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details.
