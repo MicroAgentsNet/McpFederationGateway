@@ -63,14 +63,26 @@ public class IntegrationTests
             UseShellExecute = false,
             CreateNoWindow = true,
             WorkingDirectory = Path.GetDirectoryName(serverDll),
-            RedirectStandardOutput = false, // Keep false to see logs
-            RedirectStandardError = false
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            RedirectStandardInput = true // Keep stdin open to prevent premature close if transport relies on it
         };
-        _serverProcess = System.Diagnostics.Process.Start(startInfo);
         
-        if (_serverProcess == null || _serverProcess.HasExited)
+        var outputLog = new System.Text.StringBuilder();
+        var errorLog = new System.Text.StringBuilder();
+
+        _serverProcess = new System.Diagnostics.Process { StartInfo = startInfo };
+        
+        _serverProcess.OutputDataReceived += (sender, args) => { if (args.Data != null) outputLog.AppendLine(args.Data); };
+        _serverProcess.ErrorDataReceived += (sender, args) => { if (args.Data != null) errorLog.AppendLine(args.Data); };
+
+        _serverProcess.Start();
+        _serverProcess.BeginOutputReadLine();
+        _serverProcess.BeginErrorReadLine();
+        
+        if (_serverProcess.HasExited)
         {
-             Assert.Fail("Failed to start Dummy Server process.");
+             Assert.Fail($"Dummy Server process exited immediately. ExitCode: {_serverProcess.ExitCode}. Error: {errorLog}. Output: {outputLog}");
         }
         
         // Wait for server to be ready
@@ -82,7 +94,9 @@ public class IntegrationTests
         {
             if (_serverProcess.HasExited)
             {
-                 Assert.Fail($"Dummy Server process exited unexpectedly with code {_serverProcess.ExitCode}");
+                 // Wait a tiny bit to ensure logs are flushed
+                 Thread.Sleep(100);
+                 Assert.Fail($"Dummy Server process exited unexpectedly with code {_serverProcess.ExitCode}.\nError Log:\n{errorLog}\nOutput Log:\n{outputLog}");
             }
 
             try
