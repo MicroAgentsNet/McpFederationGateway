@@ -18,9 +18,10 @@
 - **🔌 Dual-Transport Bridge**:
   - Host it locally via **Stdio** for integration with standard MCP clients (like Claude Desktop).
   - Expose it remotely via **SSE/HTTP** for enterprise or cloud-based agentic workflows.
-- **🧠 Federated Mode (Context Optimized)**:
-  - Instead of overwhelming the LLM context with hundreds of tools, exposes only two powerful meta-tools: `how_to_use` and `call`.
-- **🛠️ Direct Mode (Legacy Compatibility)**: Exposes all tools from downstream servers with optional namespacing to prevent collisions.
+- **🧠 Federated Mode (Configurable per-server)**:
+  - When enabled for a server, hides its specific tools from the root `tools/list` to reduce LLM context consumption. Access is provided via the `how_to_use` and `call` meta-tools.
+- **🛠️ Direct Mode (Default, configurable per-server)**:
+  - Exposes all tools from downstream servers as-is, with prefixes (e.g., `server_toolname`) to prevent collisions.
 - **🚀 Native AOT Performance**: Compiled to native code for ultra-fast startup and minimal footprint.
 - **⚙️ Hierarchical Configuration**: Merges global user defaults with workspace-specific configurations.
 
@@ -67,12 +68,14 @@ The gateway looks for configuration in `~/.microagents/config.json` and local wo
     {
       "name": "weather",
       "transport": "stdio",
+      "mode": "direct",
       "command": "npx",
       "arguments": ["-y", "@modelcontextprotocol/server-weather"]
     },
     {
-      "name": "docs",
+      "name": "complex-agent",
       "transport": "http",
+      "mode": "federated",
       "url": "https://mcp.example.com/sse"
     }
   ]
