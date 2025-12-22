@@ -17,12 +17,13 @@ jobs:
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 10.0.x
+          include-prerelease: true
 
-      - name: Install dependencies
-        run: dotnet restore src/McpFederationGateway/McpFederationGateway.csproj
+      - name: Restore
+        run: dotnet restore McpFederationGateway.sln
 
       - name: Build
-        run: dotnet build src/McpFederationGateway/McpFederationGateway.csproj --configuration Release --no-restore
+        run: dotnet build McpFederationGateway.sln --configuration Release --no-restore
 
       - name: Test
-        run: dotnet test src/McpFederationGateway/McpFederationGateway.csproj --configuration Release --no-build --verbosity minimal
+        run: dotnet test McpFederationGateway.sln --configuration Release --no-build --verbosity minimal

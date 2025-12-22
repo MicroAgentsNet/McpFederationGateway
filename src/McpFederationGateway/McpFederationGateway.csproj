@@ -6,10 +6,26 @@
     <Nullable>enable</Nullable>
     <PublishAot>true</PublishAot>
     <InvariantGlobalization>true</InvariantGlobalization>
+
+    <!-- Set up the NuGet package to be an MCP server -->
+    <PackAsTool>true</PackAsTool>
+    <PackageType>McpServer</PackageType>
+    
+    <!-- Set recommended package metadata -->
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageId>MicroAgents.McpFederationGateway</PackageId>
+    <PackageVersion>1.0.0</PackageVersion>
+    <PackageTags>AI; MCP; server; stdio; gateway</PackageTags>
+    <Description>MicroAgents MCP Federation Gateway - A reverse proxy and aggregator for MCP servers.</Description>
   </PropertyGroup>
 
+  <!-- Include additional files for browsing the MCP server. -->
   <ItemGroup>
+    <None Include=".mcp\server.json" Pack="true" PackagePath="/.mcp/" />
+    <None Include="..\..\..\README.md" Pack="true" PackagePath="/" Link="README.md" />
+  </ItemGroup>
 
+  <ItemGroup>
     <PackageReference Include="ModelContextProtocol" Version="0.5.0-preview.1" />
     <PackageReference Include="ModelContextProtocol.AspNetCore" Version="0.5.0-preview.1" />
   </ItemGroup>

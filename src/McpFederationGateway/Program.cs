@@ -38,14 +38,14 @@ var mcpBuilder = builder.Services.AddMcpServer(options =>
 })
 .WithListToolsHandler(async (context, ct) =>
 {
-    var aggregator = context.Services.GetRequiredService<IAggregationService>();
+    var aggregator = context.Services!.GetRequiredService<IAggregationService>();
     var tools = await aggregator.GetToolsAsync();
     return new ListToolsResult { Tools = tools.ToList() };
 })
 .WithCallToolHandler(async (context, ct) =>
 {
-    var router = context.Services.GetRequiredService<IRouterService>();
-    var request = context.Params;
+    var router = context.Services!.GetRequiredService<IRouterService>();
+    var request = context.Params!;
     var args = request.Arguments?.ToDictionary(kvp => kvp.Key, kvp => (object?)kvp.Value) ?? new Dictionary<string, object?>();
     return await router.CallToolAsync(request.Name, args, ct);
 });

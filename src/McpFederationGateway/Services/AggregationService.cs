@@ -1,6 +1,8 @@
 using McpFederationGateway.Interfaces;
 using ModelContextProtocol.Protocol;
 using System.Text.Json;
+using Microsoft.Extensions.Logging;
+using McpFederationGateway.Models;
 
 namespace McpFederationGateway.Services;
 
@@ -8,11 +10,13 @@ public class AggregationService : IAggregationService
 {
     private readonly IConfigurationService _configService;
     private readonly IMcpClientFactory _clientFactory;
+    private readonly ILogger<AggregationService> _logger;
 
-    public AggregationService(IConfigurationService configService, IMcpClientFactory clientFactory)
+    public AggregationService(IConfigurationService configService, IMcpClientFactory clientFactory, ILogger<AggregationService> logger)
     {
         _configService = configService;
         _clientFactory = clientFactory;
+        _logger = logger;
     }
 
     public async Task<IEnumerable<Tool>> GetToolsAsync()
@@ -30,7 +34,6 @@ public class AggregationService : IAggregationService
                     continue;
                 }
 
-
                 var client = await _clientFactory.GetClientAsync(serverConfig);
                 var tools = await client.ListToolsAsync();
                 
@@ -45,9 +48,9 @@ public class AggregationService : IAggregationService
                     });
                 }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                // Log and continue
+                _logger.LogError(ex, "Failed to aggregate tools from server {ServerName}", serverName);
             }
         }
 
@@ -56,7 +59,7 @@ public class AggregationService : IAggregationService
         {
             Name = "how_to_use",
             Description = "Provides documentation, summaries, and usage guides for a specific federated MCP server.",
-            InputSchema = JsonSerializer.Deserialize<JsonElement>(@"{
+            InputSchema = JsonSerializer.Deserialize(@"{
                 ""type"": ""object"",
                 ""properties"": {
                     ""mcp_server_name"": {
@@ -65,14 +68,14 @@ public class AggregationService : IAggregationService
                     }
                 },
                 ""required"": [""mcp_server_name""]
-            }")
+            }", AppJsonContext.Default.JsonElement)
         });
 
         allTools.Add(new Tool
         {
             Name = "call",
             Description = "Calls a tool on a specific federated MCP server.",
-            InputSchema = JsonSerializer.Deserialize<JsonElement>(@"{
+            InputSchema = JsonSerializer.Deserialize(@"{
                 ""type"": ""object"",
                 ""properties"": {
                     ""server_name"": {
@@ -89,7 +92,7 @@ public class AggregationService : IAggregationService
                     }
                 },
                 ""required"": [""server_name"", ""tool_name""]
-            }")
+            }", AppJsonContext.Default.JsonElement)
         });
 
         return allTools;

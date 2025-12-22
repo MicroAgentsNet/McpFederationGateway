@@ -1,0 +1,22 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-10-17/server.schema.json",
+  "description": "MicroAgents MCP Federation Gateway - A reverse proxy and aggregator for MCP servers",
+  "name": "MicroAgentsNet/McpFederationGateway",
+  "version": "1.0.0",
+  "packages": [
+    {
+      "registryType": "nuget",
+      "identifier": "MicroAgents.McpFederationGateway",
+      "version": "1.0.0",
+      "transport": {
+        "type": "stdio"
+      },
+      "packageArguments": [],
+      "environmentVariables": []
+    }
+  ],
+  "repository": {
+    "url": "https://github.com/MicroAgentsNet/McpFederationGateway",
+    "source": "github"
+  }
+}

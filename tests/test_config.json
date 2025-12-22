@@ -1,0 +1,15 @@
+{
+  "Servers": [
+    {
+      "Name": "dummy",
+      "Transport": "http",
+      "Url": "http://127.0.0.1:8090/sse",
+      "Command": "dotnet",
+      "Arguments": [
+        "/Users/igor/Sources/MicroAgentsNet/repos/McpFederationGateway/tests/DummyServer/DummyServer.dll",
+        "--urls=http://127.0.0.1:8090"
+      ],
+      "Mode": "direct"
+    }
+  ]
+}
