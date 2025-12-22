@@ -29,7 +29,7 @@ public class IntegrationTests
         var pwd = Directory.GetCurrentDirectory();
         TestContext.Progress.WriteLine($"PWD: {pwd}");
         
-        _configPath = "/Users/igor/Sources/MicroAgentsNet/repos/McpFederationGateway/tests/test_config.json";
+        _configPath = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "../../../../../tests/test_config.json"));
         
         TestContext.Progress.WriteLine($"Config Path: {_configPath}, Exists: {File.Exists(_configPath)}");
         if (File.Exists(_configPath))
@@ -41,7 +41,15 @@ public class IntegrationTests
 
         // Start Dummy Server
         // Ensure path includes build output directory
-        var serverDll = "/Users/igor/Sources/MicroAgentsNet/repos/McpFederationGateway/tests/DummyServer/bin/Debug/net10.0/DummyServer.dll";
+        // In CI, configurations might be Release. Local might be Debug.
+        // We assume we are running from bin/Debug/net10.0 or bin/Release/net10.0 of the test project.
+        var buildConfig = "Debug";
+        #if RELEASE
+        buildConfig = "Release";
+        #endif
+        
+        // Relative path to DummyServer dll
+        var serverDll = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, $"../../../../DummyServer/bin/{buildConfig}/net10.0/DummyServer.dll"));
         
         if (!File.Exists(serverDll))
         {
