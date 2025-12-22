@@ -169,7 +169,7 @@ public class IntegrationTests
         
         // Let's verify if echoTool is null to debug
         var toolNames = string.Join(", ", tools.Select(t => t.Name));
-        TestContext.WriteLine($"Found tools: {toolNames}");
+        TestContext.Progress.WriteLine($"Found tools: {toolNames}");
 
         echoTool = tools.FirstOrDefault(t => t.Name == "dummy_echo");
         Assert.That(echoTool, Is.Not.Null, $"dummy_echo tool should exist. Found: {toolNames}");
