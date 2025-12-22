@@ -1,7 +1,8 @@
 # 🌐 MCP Federation Gateway
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Build Status](https://img.shields.io/badge/Build-Success-brightgreen.svg)]()
+[![NuGet](https://img.shields.io/nuget/v/MicroAgents.McpFederationGateway.svg)](https://www.nuget.org/packages/MicroAgents.McpFederationGateway/)
+[![Build Status](https://img.shields.io/badge/Build-Success-brightgreen.svg)](https://github.com/MicroAgentsNet/McpFederationGateway/actions)
 [![.NET](https://img.shields.io/badge/.NET-10.0-blue.svg)](https://dotnet.microsoft.com/download/dotnet/10.0)
 [![AOT](https://img.shields.io/badge/NativeAOT-Supported-orange.svg)]()
 
@@ -43,11 +44,15 @@ In **Federated Mode**, the gateway exposes two primary tools to interact with th
 The `McpFederationGateway` is designed to be executed using **dnx**, a lightweight runner for .NET-based MCP servers.
 
 ```bash
-# To run the latest version from NuGet
-dnx McpFederationGateway --transport stdio
+# To run the latest preview version from NuGet
+dnx MicroAgents.McpFederationGateway --transport stdio
 
 # To run a specific version
-dnx McpFederationGateway@1.0.0 --transport stdio
+dnx MicroAgents.McpFederationGateway@0.1.0-preview --transport stdio
+
+# Alternative: Install as a global .NET tool
+dotnet tool install -g MicroAgents.McpFederationGateway --version 0.1.0-preview
+McpFederationGateway --transport stdio
 ```
 
 For development and local execution from source:
@@ -58,7 +63,7 @@ git clone https://github.com/MicroAgentsNet/McpFederationGateway.git
 cd McpFederationGateway
 
 # Run using dotnet run
-dotnet run -- --transport stdio
+dotnet run --project src/McpFederationGateway -- --transport stdio
 ```
 
 ### Configuration

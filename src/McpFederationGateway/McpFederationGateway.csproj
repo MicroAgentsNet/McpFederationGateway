@@ -10,19 +10,34 @@
     <!-- Set up the NuGet package to be an MCP server -->
     <PackAsTool>true</PackAsTool>
     <PackageType>McpServer</PackageType>
+    <IsPackable>true</IsPackable>
     
     <!-- Set recommended package metadata -->
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageId>MicroAgents.McpFederationGateway</PackageId>
-    <PackageVersion>1.0.0</PackageVersion>
-    <PackageTags>AI; MCP; server; stdio; gateway</PackageTags>
+    <PackageVersion>0.1.0-preview</PackageVersion>
+    <PackageTags>AI; MCP; server; stdio; gateway; federation; aggregator</PackageTags>
     <Description>MicroAgents MCP Federation Gateway - A reverse proxy and aggregator for MCP servers.</Description>
+    
+    <!-- Authors and Company -->
+    <Authors>Igor Solomatov</Authors>
+    <Company>Igor Solomatov</Company>
+    <Product>MicroAgents MCP Federation Gateway</Product>
+    <Copyright>Copyright © 2025 Igor Solomatov</Copyright>
+    
+    <!-- License -->
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    
+    <!-- Repository and Project URLs -->
+    <PackageProjectUrl>https://github.com/MicroAgentsNet/McpFederationGateway</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/MicroAgentsNet/McpFederationGateway</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
   </PropertyGroup>
 
   <!-- Include additional files for browsing the MCP server. -->
   <ItemGroup>
     <None Include=".mcp\server.json" Pack="true" PackagePath="/.mcp/" />
-    <None Include="..\..\..\README.md" Pack="true" PackagePath="/" Link="README.md" />
+    <None Include="..\..\README.md" Pack="true" PackagePath="/" Link="README.md" />
   </ItemGroup>
 
   <ItemGroup>
