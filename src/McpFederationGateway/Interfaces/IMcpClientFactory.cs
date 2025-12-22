@@ -5,5 +5,5 @@ namespace McpFederationGateway.Interfaces;
 
 public interface IMcpClientFactory
 {
-    Task<IMcpClient> GetClientAsync(McpServerConfig config);
+    Task<McpClient> GetClientAsync(McpServerConfig config);
 }

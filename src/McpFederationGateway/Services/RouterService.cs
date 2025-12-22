@@ -1,5 +1,6 @@
 using McpFederationGateway.Interfaces;
 using ModelContextProtocol.Protocol;
+using McpFederationGateway.Models;
 
 namespace McpFederationGateway.Services;
 
@@ -7,11 +8,13 @@ public class RouterService : IRouterService
 {
     private readonly IConfigurationService _configService;
     private readonly IMcpClientFactory _clientFactory;
+    private readonly IMicroAgentChatClient _chatClient;
 
-    public RouterService(IConfigurationService configService, IMcpClientFactory clientFactory)
+    public RouterService(IConfigurationService configService, IMcpClientFactory clientFactory, IMicroAgentChatClient chatClient)
     {
         _configService = configService;
         _clientFactory = clientFactory;
+        _chatClient = chatClient;
     }
 
     public async Task<CallToolResult> CallToolAsync(string fullName, IDictionary<string, object?> arguments, CancellationToken cancellationToken)
@@ -34,14 +37,9 @@ public class RouterService : IRouterService
             if (!arguments.TryGetValue("mcp_server_name", out var targetObj) || targetObj is not string targetName)
                 throw new ArgumentException("Argument 'mcp_server_name' is required for 'how_to_use' tool");
 
-            // TODO: Implement LLM-based documentation generation as per ARCHITECTURE.md
-            return new CallToolResult 
-            { 
-                 Content = new List<ContentBlock> 
-                 { 
-                     new TextContentBlock { Text = $"Documentation for '{targetName}' is not yet implemented using host LLM." } 
-                 } 
-            };
+            var topic = arguments.TryGetValue("topic", out var topicObj) && topicObj is string t ? t : null;
+
+            return await GenerateDocumentationAsync(targetName, topic, cancellationToken);
         }
 
         // Direct prefixed tool handling. Format: serverName_toolName
@@ -63,6 +61,44 @@ public class RouterService : IRouterService
             ?? throw new KeyNotFoundException($"Server {serverName} not found in configuration.");
 
         var client = await _clientFactory.GetClientAsync(serverConfig);
-        return await client.CallToolAsync(toolName, arguments, cancellationToken);
+        var readOnlyArgs = arguments as IReadOnlyDictionary<string, object?> ?? new Dictionary<string, object?>(arguments);
+        return await client.CallToolAsync(toolName, readOnlyArgs);
+    }
+
+    private async Task<CallToolResult> GenerateDocumentationAsync(string serverName, string? topic, CancellationToken cancellationToken)
+    {
+        var config = await _configService.GetConfigAsync();
+        var serverConfig = config.Servers.FirstOrDefault(s => s.Name == serverName)
+            ?? throw new KeyNotFoundException($"Server {serverName} not found in configuration.");
+
+        var client = await _clientFactory.GetClientAsync(serverConfig);
+        var tools = await client.ListToolsAsync(cancellationToken: cancellationToken);
+
+        var toolSummaries = string.Join("\n", tools.Select(t => $"- {t.Name}: {t.Description}"));
+        
+        var prompt = $"""
+            You are the MCP Federation Gateway. Provide a concise guide on how to use the MCP server '{serverName}'.
+            
+            Available tools in this server:
+            {toolSummaries}
+            
+            {(topic != null ? $"Focus particularly on the topic: {topic}" : "")}
+            
+            Explain what this server does and give examples of when and how to call its tools.
+            """;
+
+        var response = await _chatClient.GetResponseAsync(new MicroAgentChatRequest
+        {
+            Messages = new List<ChatMessage> { new ChatMessage(ChatRole.User, prompt) },
+            Options = new ChatOptions { MaxOutputTokens = 1000 }
+        }, cancellationToken);
+
+        return new CallToolResult
+        {
+            Content = new List<ContentBlock>
+            {
+                new TextContentBlock { Text = response.Text ?? "No documentation generated." }
+            }
+        };
     }
 }

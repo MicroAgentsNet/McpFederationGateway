@@ -30,9 +30,9 @@ public class AggregationService : IAggregationService
                     continue;
                 }
 
+
                 var client = await _clientFactory.GetClientAsync(serverConfig);
-                var toolsResult = await client.ListToolsAsync();
-                var tools = toolsResult.Tools;
+                var tools = await client.ListToolsAsync();
                 
                 foreach (var mcpTool in tools)
                 {

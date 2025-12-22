@@ -1,0 +1,15 @@
+# Third-Party Licenses and Attributions
+
+This project uses or was inspired by code from the following open source projects:
+
+## LLMTornado
+- **License**: MIT License
+- **Source**: https://github.com/lofcz/LlmTornado
+- **Usage**: Our chat abstraction types (ChatMessage, ChatRole, ChatOptions, ChatResponse) are inspired by LLMTornado's design patterns for creating vendor-agnostic LLM interfaces.
+
+## ModelContextProtocol C# SDK
+- **License**: MIT License
+- **Source**: https://github.com/modelcontextprotocol/csharp-sdk
+- **Usage**: This project uses the ModelContextProtocol C# SDK for MCP server and client functionality.
+
+Both projects are licensed under the MIT License, which is compatible with our MIT License.

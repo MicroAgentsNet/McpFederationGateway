@@ -23,7 +23,10 @@ builder.Logging.AddConsole(o => o.LogToStandardErrorThreshold = LogLevel.Trace);
 builder.Services.AddSingleton<IConfigurationService, ConfigurationService>();
 builder.Services.AddSingleton<IMcpClientFactory, McpClientFactory>();
 builder.Services.AddSingleton<IAggregationService, AggregationService>();
-builder.Services.AddSingleton<IRouterService, RouterService>();
+
+// Chat and Routing (Scoped because they depend on the session's McpServer for Sampling)
+builder.Services.AddScoped<IMicroAgentChatClient, SamplingMicroAgentChatClient>();
+builder.Services.AddScoped<IRouterService, RouterService>();
 
 var mcpBuilder = builder.Services.AddMcpServer(options => 
 {
