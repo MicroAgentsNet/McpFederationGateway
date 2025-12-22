@@ -31,8 +31,8 @@ public class RouterService : IRouterService
 
         if (fullName == "how_to_use")
         {
-            if (!arguments.TryGetValue("package_or_library_or_mcp_server_name", out var targetObj) || targetObj is not string targetName)
-                throw new ArgumentException("Argument 'package_or_library_or_mcp_server_name' is required for 'how_to_use' tool");
+            if (!arguments.TryGetValue("mcp_server_name", out var targetObj) || targetObj is not string targetName)
+                throw new ArgumentException("Argument 'mcp_server_name' is required for 'how_to_use' tool");
 
             // TODO: Implement LLM-based documentation generation as per ARCHITECTURE.md
             return new CallToolResult 

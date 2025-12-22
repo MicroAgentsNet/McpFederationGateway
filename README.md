@@ -31,10 +31,10 @@
 
 In **Federated Mode**, the gateway exposes two primary tools to interact with the entire ecosystem:
 
-| Tool         | Description                                                                                                  |
-| :----------- | :----------------------------------------------------------------------------------------------------------- |
-| `how_to_use` | Provides documentation, summaries, and usage guides for any aggregated package or server using the host LLM. |
-| `call`       | Dynamically invokes any tool on any federated server by specifying `server_name` and `tool_name`.            |
+| Tool         | Description                                                                                                 |
+| :----------- | :---------------------------------------------------------------------------------------------------------- |
+| `how_to_use` | Provides documentation, summaries, and usage guides for a specific federated MCP server using the host LLM. |
+| `call`       | Dynamically invokes any tool on any federated server by specifying `server_name` and `tool_name`.           |
 
 ---
 

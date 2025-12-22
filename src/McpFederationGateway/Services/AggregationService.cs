@@ -55,16 +55,16 @@ public class AggregationService : IAggregationService
         allTools.Add(new Tool
         {
             Name = "how_to_use",
-            Description = "Provides documentation and usage for packages, libraries or MCP servers.",
+            Description = "Provides documentation, summaries, and usage guides for a specific federated MCP server.",
             InputSchema = JsonSerializer.Deserialize<JsonElement>(@"{
                 ""type"": ""object"",
                 ""properties"": {
-                    ""package_or_library_or_mcp_server_name"": {
+                    ""mcp_server_name"": {
                         ""type"": ""string"",
-                        ""description"": ""The name of the target to get documentation for""
+                        ""description"": ""The name of the federated MCP server to get documentation for""
                     }
                 },
-                ""required"": [""package_or_library_or_mcp_server_name""]
+                ""required"": [""mcp_server_name""]
             }")
         });
 
