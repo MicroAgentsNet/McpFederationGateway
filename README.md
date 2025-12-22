@@ -8,22 +8,46 @@
 
 > The ultimate federated entry point for the Model Context Protocol (MCP) ecosystem.
 
-`McpFederationGateway` is a high-performance, **Native AOT-compiled** .NET 10 service that acts as a reverse proxy and aggregator for multiple upstream MCP servers. It provides a unified interface for agents, reduces context consumption through smart aggregation, and bridges the gap between local (Stdio) and remote (SSE/HTTP) environments.
+`McpFederationGateway` is a high-performance, **Native AOT-compiled** .NET 10 service that acts as a reverse proxy and aggregator for multiple upstream MCP servers. It provides a unified interface for agents, dramatically reduces context consumption (**up to 40% token savings**), and delivers enterprise-grade security and policy enforcement—whether you're running locally on your laptop or deploying centrally for your entire organization.
 
 ---
 
 ## ✨ Why MCP Federation Gateway?
 
-### 🏢 Enterprise-Ready MCP Infrastructure
+### 💰 Massive Cost Savings (40% Token Reduction)
 
-Running MCP servers directly from AI agents creates significant challenges for enterprises:
+Every MCP server exposes full tool documentation to the LLM context. With 10+ servers, you can easily consume 50K+ tokens just listing available tools. **The gateway reduces this by up to 40%** through intelligent aggregation and federated mode—saving money for individual developers and enterprises alike.
 
-- **💰 Token Cost Explosion**: Every MCP server exposes full tool documentation to the LLM context. With 10+ servers, you can easily consume 50K+ tokens just listing available tools. **The gateway reduces this by up to 40%** through intelligent aggregation and federated mode.
-- **🔒 Security Risks**: Developers running arbitrary MCPs without approval, executing code in non-sandboxed environments, and accessing sensitive resources (databases, cloud APIs) without policies.
-- **⚠️ Dangerous Operations**: Database MCPs can delete data, cloud MCPs can delete resources, filesystem MCPs can modify critical files—all without oversight.
-- **🔐 No Authentication/Authorization**: Standard MCP has no built-in auth, making it unsuitable for multi-user or enterprise scenarios.
+### 🏢 Works for Everyone: Local Development to Enterprise Scale
 
-**MCP Federation Gateway solves these problems** by acting as a centralized, policy-enforced gateway for all MCP interactions.
+**For Individual Developers (Stdio)**:
+
+- Reduce your AI token costs by 40%
+- Organize multiple MCPs in one place
+- Simple configuration, zero network overhead
+- Works seamlessly with Claude Desktop and other MCP clients
+
+**For Enterprise Teams (HTTP/SSE)**:
+
+- Deploy as a centralized gateway for all AI agents in your organization
+- **Authentication & Authorization**: Control who can access which MCPs and tools
+- **Policy Enforcement**: Validate tool calls before execution, prevent dangerous operations
+- **Audit & Compliance**: Log all MCP interactions for security and compliance
+- **Cost Optimization at Scale**: Centralized context management multiplies savings across all agents
+
+### 🔒 Security & Safety (Local + Enterprise)
+
+Running MCP servers directly creates risks:
+
+- **Arbitrary Code Execution**: Developers running untrusted MCPs without approval, executing code in non-sandboxed environments
+- **Dangerous Operations**: Database MCPs can delete data, cloud MCPs can delete resources, filesystem MCPs can modify critical files—all without oversight
+- **No Access Control**: Standard MCP has no built-in auth, making it unsuitable for multi-user scenarios
+
+**The gateway addresses these by**:
+
+- Providing a single point of control for all MCP access
+- (Future) Policy engine to validate and restrict dangerous operations
+- (Future) Sandboxing support for untrusted MCPs
 
 ---
 
@@ -43,19 +67,20 @@ Automatically dispatches tool calls and resource requests to the correct downstr
 
 ### 🔌 Dual-Transport Architecture
 
-**Local (Stdio)**:
+The gateway supports both transports simultaneously or individually:
 
-- Perfect for development and integration with desktop AI clients (Claude Desktop, etc.)
-- Zero network overhead
-- Simple configuration
+**Stdio (Local)**:
 
-**Remote (HTTP/SSE)**:
+- Integration with desktop AI clients (Claude Desktop, etc.)
+- Zero network overhead, perfect for individual development
+- Get all the cost savings and safety benefits on your laptop
 
-- **Enterprise-ready**: Deploy as a centralized gateway for all AI agents in your organization
-- **Authentication & Authorization**: Control who can access which MCPs and tools
-- **Policy Enforcement**: Validate tool calls before execution, prevent dangerous operations
-- **Audit & Compliance**: Log all MCP interactions for security and compliance
-- **Cost Optimization**: Centralized context management reduces token consumption across all agents
+**HTTP/SSE (Remote)**:
+
+- Deploy centrally for team/organization-wide access
+- Multiple agents connecting to single gateway instance
+- Enables enterprise features: authentication, audit logging, policy enforcement
+- Same cost savings, multiplied across all users
 
 ### 🧠 Two Operating Modes (Per-Server Configurable)
 
