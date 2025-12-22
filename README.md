@@ -12,19 +12,125 @@
 
 ---
 
+## ✨ Why MCP Federation Gateway?
+
+### 🏢 Enterprise-Ready MCP Infrastructure
+
+Running MCP servers directly from AI agents creates significant challenges for enterprises:
+
+- **💰 Token Cost Explosion**: Every MCP server exposes full tool documentation to the LLM context. With 10+ servers, you can easily consume 50K+ tokens just listing available tools. **The gateway reduces this by up to 40%** through intelligent aggregation and federated mode.
+- **🔒 Security Risks**: Developers running arbitrary MCPs without approval, executing code in non-sandboxed environments, and accessing sensitive resources (databases, cloud APIs) without policies.
+- **⚠️ Dangerous Operations**: Database MCPs can delete data, cloud MCPs can delete resources, filesystem MCPs can modify critical files—all without oversight.
+- **🔐 No Authentication/Authorization**: Standard MCP has no built-in auth, making it unsuitable for multi-user or enterprise scenarios.
+
+**MCP Federation Gateway solves these problems** by acting as a centralized, policy-enforced gateway for all MCP interactions.
+
+---
+
 ## ✨ Key Features
 
-- **🔄 Federation & Aggregation**: Combines multiple downstream MCP servers into a single, unified tool catalog.
-- **🛣️ Intelligent Routing**: Automatically dispatches tool calls and resource requests to the correct downstream server based on namespacing or meta-tool parameters.
-- **🔌 Dual-Transport Bridge**:
-  - Host it locally via **Stdio** for integration with standard MCP clients (like Claude Desktop).
-  - Expose it remotely via **SSE/HTTP** for enterprise or cloud-based agentic workflows.
-- **🧠 Federated Mode (Configurable per-server)**:
-  - When enabled for a server, hides its specific tools from the root `tools/list` to reduce LLM context consumption. Access is provided via the `how_to_use` and `call` meta-tools.
-- **🛠️ Direct Mode (Default, configurable per-server)**:
-  - Exposes all tools from downstream servers as-is, with prefixes (e.g., `server_toolname`) to prevent collisions.
-- **🚀 Native AOT Performance**: Compiled to native code for ultra-fast startup and minimal footprint.
-- **⚙️ Hierarchical Configuration**: Merges global user defaults with workspace-specific configurations.
+### 🔄 Federation & Aggregation
+
+Combines multiple downstream MCP servers into a single, unified interface. Configure each server independently with its own mode, transport, and settings.
+
+### 🛣️ Intelligent Routing
+
+Automatically dispatches tool calls and resource requests to the correct downstream server based on:
+
+- Tool name prefixes (Direct Mode)
+- Meta-tool parameters (Federated Mode)
+- Server configuration
+
+### 🔌 Dual-Transport Architecture
+
+**Local (Stdio)**:
+
+- Perfect for development and integration with desktop AI clients (Claude Desktop, etc.)
+- Zero network overhead
+- Simple configuration
+
+**Remote (HTTP/SSE)**:
+
+- **Enterprise-ready**: Deploy as a centralized gateway for all AI agents in your organization
+- **Authentication & Authorization**: Control who can access which MCPs and tools
+- **Policy Enforcement**: Validate tool calls before execution, prevent dangerous operations
+- **Audit & Compliance**: Log all MCP interactions for security and compliance
+- **Cost Optimization**: Centralized context management reduces token consumption across all agents
+
+### 🧠 Two Operating Modes (Per-Server Configurable)
+
+#### **Direct Mode** (Default)
+
+- **What it does**: Exposes all tools from the downstream server directly in the gateway's tool list
+- **Tool naming**: Adds server name prefix to prevent collisions (e.g., `weather_get_forecast`, `database_query`)
+- **Context impact**: Full tool documentation included in LLM context
+- **Best for**: Small number of servers, frequently-used tools, when you want LLM to see all available tools upfront
+- **Example**: Weather service, calculator, simple utilities
+
+#### **Federated Mode**
+
+- **What it does**: Hides specific tools from the main tool list, provides access via meta-tools
+- **Context impact**: **Massive reduction** (up to 40% token savings) - only meta-tool docs in context, not individual tools
+- **Access method**: Use `how_to_use(server_name, topic)` to get docs, `call(server_name, tool_name, args)` to invoke
+- **Best for**: Large MCP servers with many tools, rarely-used tools, complex documentation
+- **Example**: Database MCP with 50+ tools, cloud provider MCPs, complex agent frameworks
+
+#### **How the Tool List is Formed**
+
+When an AI agent queries `tools/list`, the gateway returns:
+
+1. **All Direct Mode tools** with prefixes:
+
+   - `weather_get_forecast` (from weather server in Direct Mode)
+   - `calc_add` (from calculator server in Direct Mode)
+
+2. **Meta-tools** (always included):
+
+   - `how_to_use(mcp_server_name, topic)` - Get documentation for any Federated Mode server
+   - `call(mcp_server_name, tool_name, args)` - Invoke any tool on any Federated Mode server
+
+3. **Federated Mode tools are NOT listed** - they're accessed dynamically via meta-tools, keeping context lean
+
+**Example Configuration**:
+
+```json
+{
+  "servers": [
+    {
+      "name": "weather",
+      "mode": "direct",
+      "transport": "stdio",
+      "command": "npx",
+      "arguments": ["-y", "@modelcontextprotocol/server-weather"]
+    },
+    {
+      "name": "database",
+      "mode": "federated",
+      "transport": "http",
+      "url": "https://db-mcp.internal.company.com/sse"
+    }
+  ]
+}
+```
+
+**Result**: Agent sees `weather_get_forecast`, `how_to_use`, `call` in tool list. Database tools (potentially 50+) are hidden, accessed only when needed via `call("database", "query", {...})`.
+
+### 🚀 Native AOT Performance
+
+Compiled to native code for ultra-fast startup and minimal footprint. Perfect for serverless and containerized deployments.
+
+### ⚙️ Hierarchical Configuration
+
+Merges global user defaults with workspace-specific configurations. Enterprise admins can set organization-wide policies while allowing workspace customization.
+
+### 🔮 Future Enterprise Features (Roadmap)
+
+- **Policy Engine**: Define rules like "database delete operations require approval" or "cloud resource modifications only in dev environment"
+- **Authentication**: OAuth2, API keys, JWT tokens for secure access
+- **Rate Limiting**: Prevent abuse and control costs
+- **Sandboxing**: Run untrusted MCPs in isolated containers
+- **Central MCP Registry**: Discover and install approved MCPs from organization catalog
+- **Usage Analytics**: Track token consumption, tool usage, and costs per user/team
 
 ---
 
