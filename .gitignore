@@ -1,0 +1,11 @@
+# .NET gitignore
+[Dd]ebug/
+[Rr]elease/
+[Oo]bj/
+[Bb]in/
+.vs/
+.vscode/
+*.user
+*.suo
+bin/
+obj/
