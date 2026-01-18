@@ -42,7 +42,12 @@ public record McpServerConfig
     public McpTransportType Transport { get; init; } = McpTransportType.Stdio;
     public McpOperationMode Mode { get; init; } = McpOperationMode.Direct;
     public string? Command { get; init; }
+    
+    [JsonPropertyName("args")]
     public string[]? Arguments { get; init; }
+    
     public string? Url { get; init; }
+    
+    [JsonPropertyName("env")]
     public Dictionary<string, string>? Env { get; init; }
 }

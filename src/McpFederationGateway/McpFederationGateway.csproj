@@ -41,6 +41,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Serilog.Settings.Configuration" Version="10.0.0" />
     <ProjectReference Include="../../../csharp-sdk/src/ModelContextProtocol/ModelContextProtocol.csproj" />
     <ProjectReference Include="../../../csharp-sdk/src/ModelContextProtocol.AspNetCore/ModelContextProtocol.AspNetCore.csproj" />
     <PackageReference Include="Serilog.Extensions.Logging" Version="8.0.0" />

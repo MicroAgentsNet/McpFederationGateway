@@ -1,76 +1,66 @@
-// Step 2: Add ConfigurationService
 using McpFederationGateway.Interfaces;
 using McpFederationGateway.Services;
-using ModelContextProtocol;
-using ModelContextProtocol.Client;
-using ModelContextProtocol.Protocol;
 using ModelContextProtocol.Server;
+using Serilog;
+using Serilog.Events;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
-var builder = Host.CreateApplicationBuilder(args);
-
-builder.Logging.AddConsole(options =>
+// Configure Serilog
+try
 {
-    options.LogToStandardErrorThreshold = LogLevel.Trace;
-});
+    var builder = Host.CreateApplicationBuilder(args);
 
-// Add services
-builder.Services.AddSingleton<IConfigurationService, ConfigurationService>();
-builder.Services.AddSingleton<IMcpClientFactory, McpClientFactory>();
-
-builder.Services.AddMcpServer(options =>
-{
-    options.ServerInfo = new Implementation { Name = "GatewayWithConfig", Version = "1.0.0" };
-})
-.WithListToolsHandler(async (context, ct) =>
-{
-    Console.Error.WriteLine(">>> ListTools called, using ConfigurationService...");
-
-    var configService = context.Services!.GetRequiredService<IConfigurationService>();
-    var factory = context.Services!.GetRequiredService<IMcpClientFactory>();
+    // Clear default providers and add Serilog configuration
+    builder.Logging.ClearProviders();
+    builder.Logging.AddSerilog(new LoggerConfiguration()
+        .ReadFrom.Configuration(builder.Configuration)
+        .CreateLogger());
     
-    var config = await configService.GetConfigAsync();
-    var repomixConfig = config.Servers.FirstOrDefault(s => s.Name == "repomix");
+    // Register Services
+    builder.Services.AddSingleton<IConfigurationService, ConfigurationService>();
+    builder.Services.AddSingleton<IMcpClientFactory, McpClientFactory>();
+    builder.Services.AddSingleton<IAggregationService, AggregationService>();
+    builder.Services.AddSingleton<IMicroAgentChatClient, SamplingMicroAgentChatClient>();
+    builder.Services.AddSingleton<IRouterService, RouterService>();
+
+    // Register MCP Server
+    builder.Services.AddMcpServer(options =>
+    {
+        options.ServerInfo = new ModelContextProtocol.Protocol.Implementation { Name = "McpFederationGateway", Version = "1.0.0" };
+        options.Capabilities = new ModelContextProtocol.Protocol.ServerCapabilities
+        {
+            Tools = new ModelContextProtocol.Protocol.ToolsCapability { ListChanged = true },
+            Prompts = new ModelContextProtocol.Protocol.PromptsCapability { ListChanged = true },
+            Resources = new ModelContextProtocol.Protocol.ResourcesCapability { ListChanged = true, Subscribe = true }
+        };
+    })
+    .WithListToolsHandler(async (request, ct) =>
+    {
+        var aggregationService = request.Services!.GetRequiredService<IAggregationService>();
+        var tools = await aggregationService.GetToolsAsync();
+        return new ModelContextProtocol.Protocol.ListToolsResult { Tools = tools.ToList() };
+    })
+    .WithCallToolHandler(async (request, ct) =>
+    {
+        var routerService = request.Services!.GetRequiredService<IRouterService>();
+        var params_ = request.Params!;
+        var args = params_.Arguments?.ToDictionary(k => k.Key, v => (object?)v.Value) 
+                   ?? new Dictionary<string, object?>();
+        return await routerService.CallToolAsync(params_.Name, args, ct);
+    })
+    .WithStdioServerTransport();
+
+    var app = builder.Build();
     
-    if (repomixConfig == null)
-    {
-        Console.Error.WriteLine(">>> No repomix config found, using hardcoded");
-        repomixConfig = new McpFederationGateway.Models.McpServerConfig
-        {
-            Name = "repomix",
-            Transport = McpFederationGateway.Models.McpTransportType.Stdio,
-            Command = "npx",
-            Arguments = ["-y", "repomix", "--mcp"],
-            Mode = McpFederationGateway.Models.McpOperationMode.Direct
-        };
-    }
+    // Pre-initialize clients (fire and forget, or wait?)
+    // While developing, it's safer to let them initialize on demand or explicit background task.
+    // But for now, let's just run.
 
-    try
-    {
-        Console.Error.WriteLine($">>> Creating client for {repomixConfig.Name}...");
-        var client = await factory.GetClientAsync(repomixConfig);
-        Console.Error.WriteLine(">>> Client created!");
-
-        var tools = await client.ListToolsAsync(cancellationToken: ct);
-        Console.Error.WriteLine($">>> Got {tools.Count()} tools");
-
-        return new ListToolsResult
-        {
-            Tools = tools.Select(t => new Tool
-            {
-                Name = $"repomix_{t.Name}",
-                Description = t.Description
-            }).ToList()
-        };
-    }
-    catch (Exception ex)
-    {
-        Console.Error.WriteLine($">>> ERROR: {ex.Message}");
-        throw;
-    }
-})
-.WithStdioServerTransport();
-
-await builder.Build().RunAsync();
+    await app.RunAsync();
+}
+catch (Exception ex)
+{
+    Console.Error.WriteLine($"Application start-up failed: {ex}");
+}
