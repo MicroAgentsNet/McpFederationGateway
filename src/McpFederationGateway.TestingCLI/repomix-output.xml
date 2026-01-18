@@ -1,0 +1,959 @@
+This file is a merged representation of the entire codebase, combined into a single document by Repomix.
+
+<file_summary>
+This section contains a summary of this file.
+
+<purpose>
+This file contains a packed representation of the entire repository's contents.
+It is designed to be easily consumable by AI systems for analysis, code review,
+or other automated processes.
+</purpose>
+
+<file_format>
+The content is organized as follows:
+1. This summary section
+2. Repository information
+3. Directory structure
+4. Repository files (if enabled)
+5. Multiple file entries, each consisting of:
+  - File path as an attribute
+  - Full contents of the file
+</file_format>
+
+<usage_guidelines>
+- This file should be treated as read-only. Any changes should be made to the
+  original repository files, not this packed version.
+- When processing this file, use the file path to distinguish
+  between different files in the repository.
+- Be aware that this file may contain sensitive information. Handle it with
+  the same level of security as you would the original repository.
+</usage_guidelines>
+
+<notes>
+- Some files may have been excluded based on .gitignore rules and Repomix's configuration
+- Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
+- Files matching patterns in .gitignore are excluded
+- Files matching default ignore patterns are excluded
+- Files are sorted by Git change count (files with more changes are at the bottom)
+</notes>
+
+</file_summary>
+
+<directory_structure>
+Commands/
+  TestCallCommand.cs
+  TestConfigCommand.cs
+  TestFederatedCommand.cs
+  TestPerformanceCommand.cs
+  TestSamplingCommand.cs
+  TestToolsCommand.cs
+Services/
+  McpGatewayClient.cs
+appsettings.json
+McpFederationGateway.TestingCLI.csproj
+Program.cs
+testingcli-config.json
+</directory_structure>
+
+<files>
+This section contains the contents of the repository's files.
+
+<file path="Commands/TestCallCommand.cs">
+using System.CommandLine;
+using System.CommandLine.Parsing;
+using System.Text.Json;
+using McpFederationGateway.TestingCLI.Services;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+
+namespace McpFederationGateway.TestingCLI.Commands;
+
+public class TestCallCommand : Command
+{
+    private readonly Option<string> _toolOption;
+    private readonly Option<string> _argsOption;
+
+    public TestCallCommand() : base("test-call", "Test direct tool invocation")
+    {
+        _toolOption = new Option<string>("--tool")
+        {
+            Description = "Tool name to invoke",
+            Required = true
+        };
+
+        _argsOption = new Option<string>("--args")
+        {
+            Description = "JSON arguments for the tool (optional)",
+            DefaultValueFactory = _ => "{}"
+        };
+
+        Options.Add(_toolOption);
+        Options.Add(_argsOption);
+
+        SetAction(ExecuteAsync);
+    }
+
+    private async Task<int> ExecuteAsync(ParseResult parseResult)
+    {
+        var toolName = parseResult.GetValue(_toolOption)!;
+        var argsJson = parseResult.GetValue(_argsOption)!;
+        var logger = Program.ServiceProvider.GetRequiredService<ILogger<TestCallCommand>>();
+        var gatewayClient = Program.ServiceProvider.GetRequiredService<McpGatewayClient>();
+
+        try
+        {
+            logger.LogInformation("=== Test Call Command ===");
+            logger.LogInformation("Tool: {ToolName}", toolName);
+            logger.LogInformation("Arguments JSON: {Args}", argsJson);
+
+            var arguments = JsonSerializer.Deserialize<Dictionary<string, object?>>(argsJson) ?? new Dictionary<string, object?>();
+
+            Console.WriteLine($"\nCalling tool: {toolName}");
+            Console.WriteLine($"Arguments: {argsJson}");
+            Console.WriteLine(new string('-', 80));
+
+            var startTime = DateTime.UtcNow;
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+            var result = await gatewayClient.CallToolAsync(toolName, arguments, cts.Token);
+            var elapsed = DateTime.UtcNow - startTime;
+
+            Console.WriteLine($"\nResponse received in {elapsed.TotalMilliseconds:F2}ms");
+            Console.WriteLine("Result:");
+            Console.WriteLine(JsonSerializer.Serialize(result, new JsonSerializerOptions { WriteIndented = true }));
+
+            logger.LogInformation("Test completed successfully. Latency: {Latency}ms", elapsed.TotalMilliseconds);
+            return 0;
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Test failed");
+            Console.WriteLine($"\nError: {ex.Message}");
+            return 1;
+        }
+    }
+}
+</file>
+
+<file path="Commands/TestConfigCommand.cs">
+using System.CommandLine;
+using System.CommandLine.Parsing;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+
+namespace McpFederationGateway.TestingCLI.Commands;
+
+public class TestConfigCommand : Command
+{
+    public TestConfigCommand() : base("test-config", "Validate MCP client configuration")
+    {
+        SetAction(ExecuteAsync);
+    }
+
+    private Task<int> ExecuteAsync(ParseResult parseResult)
+    {
+        var logger = Program.ServiceProvider.GetRequiredService<ILogger<TestConfigCommand>>();
+
+        try
+        {
+            logger.LogInformation("=== Test Config Command ===");
+
+            Console.WriteLine("\nMCP Gateway Configuration Test");
+            Console.WriteLine(new string('=', 80));
+            Console.WriteLine("\nNote: When using MCP protocol to communicate with the gateway,");
+            Console.WriteLine("configuration details are not exposed to the client.");
+            Console.WriteLine("\nThe gateway's internal configuration is managed independently");
+            Console.WriteLine("and only tool/call operations are exposed through the MCP protocol.");
+            Console.WriteLine("\nTo verify the gateway is configured correctly:");
+            Console.WriteLine("1. Use 'test-tools' to list available tools");
+            Console.WriteLine("2. Use 'test-call' to invoke specific tools");
+            Console.WriteLine("3. Check the gateway's own logs for configuration details");
+            Console.WriteLine(new string('=', 80));
+
+            logger.LogInformation("Config test completed - configuration is managed by gateway");
+            return Task.FromResult(0);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Test failed");
+            Console.WriteLine($"\nError: {ex.Message}");
+            return Task.FromResult(1);
+        }
+    }
+}
+</file>
+
+<file path="Commands/TestFederatedCommand.cs">
+using System.CommandLine;
+using System.CommandLine.Parsing;
+using System.Text.Json;
+using McpFederationGateway.TestingCLI.Services;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+
+namespace McpFederationGateway.TestingCLI.Commands;
+
+public class TestFederatedCommand : Command
+{
+    private readonly Option<string> _serverOption;
+    private readonly Option<string?> _toolOption;
+
+    public TestFederatedCommand() : base("test-federated", "Test federated mode (how_to_use and call meta-tools)")
+    {
+        _serverOption = new Option<string>("--server")
+        {
+            Description = "MCP server name (optional, if omitted performs global discovery)",
+            Required = false
+        };
+
+        _toolOption = new Option<string?>("--tool")
+        {
+            Description = "Tool name to call (optional, will use how_to_use if not provided)"
+        };
+
+        Options.Add(_serverOption);
+        Options.Add(_toolOption);
+
+        SetAction(ExecuteAsync);
+    }
+
+    private async Task<int> ExecuteAsync(ParseResult parseResult)
+    {
+        var serverName = parseResult.GetValue(_serverOption)!;
+        var toolName = parseResult.GetValue(_toolOption);
+        var logger = Program.ServiceProvider.GetRequiredService<ILogger<TestFederatedCommand>>();
+        var gatewayClient = Program.ServiceProvider.GetRequiredService<McpGatewayClient>();
+
+        try
+        {
+            logger.LogInformation("=== Test Federated Command ===");
+            logger.LogInformation("Server: {ServerName}", serverName);
+
+            Console.WriteLine($"\nTesting federated mode for server: {serverName}");
+            Console.WriteLine(new string('-', 80));
+
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+
+            // Test how_to_use meta-tool
+            Console.WriteLine("\n1. Testing 'how_to_use' meta-tool...");
+            var howToUseArgs = new Dictionary<string, object?>();
+
+            if (!string.IsNullOrEmpty(serverName))
+            {
+                howToUseArgs["server_name"] = serverName;
+                howToUseArgs["topic"] = "overview";
+            }
+            
+            var howToUseResult = await gatewayClient.CallToolAsync("how_to_use", howToUseArgs, cts.Token);
+            Console.WriteLine("Result:");
+            Console.WriteLine(JsonSerializer.Serialize(howToUseResult, new JsonSerializerOptions { WriteIndented = true }));
+
+            // Test call meta-tool if tool name is provided
+            if (!string.IsNullOrWhiteSpace(toolName))
+            {
+                if (string.IsNullOrEmpty(serverName))
+                {
+                    logger.LogError("Server name is required when calling a tool");
+                    Console.WriteLine("\nError: Server name is required when calling a tool");
+                    return 1;
+                }
+
+                Console.WriteLine($"\n2. Testing 'call' meta-tool with {toolName}...");
+                var callArgs = new Dictionary<string, object?>
+                {
+                    ["server_name"] = serverName,
+                    ["tool_name"] = toolName,
+                    ["arguments"] = new Dictionary<string, object?>()
+                };
+
+                var callResult = await gatewayClient.CallToolAsync("call", callArgs, cts.Token);
+                Console.WriteLine("Result:");
+                Console.WriteLine(JsonSerializer.Serialize(callResult, new JsonSerializerOptions { WriteIndented = true }));
+            }
+
+            logger.LogInformation("Test completed successfully");
+            return 0;
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Test failed");
+            Console.WriteLine($"\nError: {ex.Message}");
+            return 1;
+        }
+    }
+}
+</file>
+
+<file path="Commands/TestPerformanceCommand.cs">
+using System.CommandLine;
+using System.CommandLine.Parsing;
+using System.Diagnostics;
+using McpFederationGateway.TestingCLI.Services;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+
+namespace McpFederationGateway.TestingCLI.Commands;
+
+public class TestPerformanceCommand : Command
+{
+    private readonly Option<int> _iterationsOption;
+    private readonly Option<string?> _toolOption;
+
+    public TestPerformanceCommand() : base("test-performance", "Execute performance benchmarks (latency, throughput)")
+    {
+        _iterationsOption = new Option<int>("--iterations")
+        {
+            Description = "Number of iterations to run",
+            DefaultValueFactory = _ => 10
+        };
+
+        _toolOption = new Option<string?>("--tool")
+        {
+            Description = "Tool name to benchmark (optional, will list tools if not provided)"
+        };
+
+        Options.Add(_iterationsOption);
+        Options.Add(_toolOption);
+
+        SetAction(ExecuteAsync);
+    }
+
+    private async Task<int> ExecuteAsync(ParseResult parseResult)
+    {
+        var iterations = parseResult.GetValue(_iterationsOption);
+        var toolName = parseResult.GetValue(_toolOption);
+        var logger = Program.ServiceProvider.GetRequiredService<ILogger<TestPerformanceCommand>>();
+        var gatewayClient = Program.ServiceProvider.GetRequiredService<McpGatewayClient>();
+
+        try
+        {
+            logger.LogInformation("=== Test Performance Command ===");
+            logger.LogInformation("Iterations: {Iterations}", iterations);
+
+            Console.WriteLine("\nPerformance Benchmark");
+            Console.WriteLine(new string('=', 80));
+            Console.WriteLine($"Iterations: {iterations}");
+
+            string targetTool;
+            Dictionary<string, object?> arguments;
+
+            if (string.IsNullOrWhiteSpace(toolName))
+            {
+                // Default to list tools operation for benchmarking
+                Console.WriteLine("No tool specified - benchmarking ListTools operation");
+                Console.WriteLine(new string('-', 80));
+
+                var latencies = new List<double>();
+                var sw = Stopwatch.StartNew();
+
+                for (int i = 0; i < iterations; i++)
+                {
+                    var iterationStart = Stopwatch.StartNew();
+                    using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+                    var tools = await gatewayClient.ListToolsAsync(cts.Token);
+                    iterationStart.Stop();
+
+                    var latency = iterationStart.Elapsed.TotalMilliseconds;
+                    latencies.Add(latency);
+
+                    logger.LogDebug("Iteration {Iteration}/{Total}: {Latency}ms", i + 1, iterations, latency);
+                    Console.Write($"\rProgress: {i + 1}/{iterations} iterations completed...");
+                }
+
+                sw.Stop();
+                Console.WriteLine("\n");
+
+                PrintStatistics(latencies, sw.Elapsed, logger);
+                return 0;
+            }
+            else
+            {
+                // Benchmark specific tool call
+                Console.WriteLine($"Tool: {toolName}");
+                Console.WriteLine("Arguments: {} (empty)");
+                Console.WriteLine(new string('-', 80));
+
+                targetTool = toolName;
+                arguments = new Dictionary<string, object?>();
+
+                var latencies = new List<double>();
+                var errors = 0;
+                var sw = Stopwatch.StartNew();
+
+                for (int i = 0; i < iterations; i++)
+                {
+                    var iterationStart = Stopwatch.StartNew();
+                    try
+                    {
+                        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+                        var result = await gatewayClient.CallToolAsync(targetTool, arguments, cts.Token);
+                        iterationStart.Stop();
+
+                        var latency = iterationStart.Elapsed.TotalMilliseconds;
+                        latencies.Add(latency);
+
+                        logger.LogDebug("Iteration {Iteration}/{Total}: {Latency}ms", i + 1, iterations, latency);
+                    }
+                    catch (Exception ex)
+                    {
+                        errors++;
+                        logger.LogWarning(ex, "Iteration {Iteration} failed", i + 1);
+                    }
+
+                    Console.Write($"\rProgress: {i + 1}/{iterations} iterations completed...");
+                }
+
+                sw.Stop();
+                Console.WriteLine("\n");
+
+                if (errors > 0)
+                {
+                    Console.WriteLine($"Errors: {errors}/{iterations} ({errors * 100.0 / iterations:F1}%)");
+                    Console.WriteLine();
+                }
+
+                if (latencies.Count > 0)
+                {
+                    PrintStatistics(latencies, sw.Elapsed, logger);
+                }
+                else
+                {
+                    Console.WriteLine("All iterations failed - no statistics to display");
+                    return 1;
+                }
+
+                return 0;
+            }
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Test failed");
+            Console.WriteLine($"\nError: {ex.Message}");
+            return 1;
+        }
+    }
+
+    private static void PrintStatistics(List<double> latencies, TimeSpan totalTime, ILogger logger)
+    {
+        latencies.Sort();
+
+        var count = latencies.Count;
+        var min = latencies.First();
+        var max = latencies.Last();
+        var avg = latencies.Average();
+        var p50 = latencies[count / 2];
+        var p95 = latencies[(int)(count * 0.95)];
+        var p99 = latencies[(int)(count * 0.99)];
+        var throughput = count / totalTime.TotalSeconds;
+
+        Console.WriteLine("Results:");
+        Console.WriteLine(new string('-', 80));
+        Console.WriteLine($"Total Time:    {totalTime.TotalMilliseconds:F2}ms");
+        Console.WriteLine($"Throughput:    {throughput:F2} ops/sec");
+        Console.WriteLine();
+        Console.WriteLine("Latency Statistics:");
+        Console.WriteLine($"  Min:         {min:F2}ms");
+        Console.WriteLine($"  Max:         {max:F2}ms");
+        Console.WriteLine($"  Average:     {avg:F2}ms");
+        Console.WriteLine($"  P50:         {p50:F2}ms");
+        Console.WriteLine($"  P95:         {p95:F2}ms");
+        Console.WriteLine($"  P99:         {p99:F2}ms");
+        Console.WriteLine(new string('=', 80));
+
+        logger.LogInformation(
+            "Performance test completed: {Count} iterations, Avg={Avg}ms, P50={P50}ms, P95={P95}ms, P99={P99}ms, Throughput={Throughput:F2} ops/sec",
+            count, avg, p50, p95, p99, throughput);
+    }
+}
+</file>
+
+<file path="Commands/TestSamplingCommand.cs">
+using System.CommandLine;
+using System.CommandLine.Parsing;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+
+namespace McpFederationGateway.TestingCLI.Commands;
+
+public class TestSamplingCommand : Command
+{
+    public TestSamplingCommand() : base("test-sampling", "Test MCP sampling functionality if supported")
+    {
+        SetAction(ExecuteAsync);
+    }
+
+    private Task<int> ExecuteAsync(ParseResult parseResult)
+    {
+        var logger = Program.ServiceProvider.GetRequiredService<ILogger<TestSamplingCommand>>();
+
+        try
+        {
+            logger.LogInformation("=== Test Sampling Command ===");
+
+            Console.WriteLine("\nMCP Sampling Test");
+            Console.WriteLine(new string('=', 80));
+            Console.WriteLine("\nNote: Sampling is an optional MCP feature that allows servers to");
+            Console.WriteLine("request LLM completions from the host/client.");
+            Console.WriteLine("\nWhen using the TestingCLI as an MCP client to communicate with the gateway,");
+            Console.WriteLine("sampling requests would need to be handled by this CLI's sampling handler.");
+            Console.WriteLine("\nCurrently, sampling is not implemented in this testing harness.");
+            Console.WriteLine("\nTo implement sampling tests:");
+            Console.WriteLine("1. Implement a sampling request handler in the MCP client");
+            Console.WriteLine("2. Connect the handler to an LLM service (e.g., Claude, GPT)");
+            Console.WriteLine("3. Test with tools that request sampling (e.g., documentation generation)");
+            Console.WriteLine("\nFor now, use the gateway's own sampling capabilities by calling tools");
+            Console.WriteLine("that may trigger sampling internally within the gateway.");
+            Console.WriteLine(new string('=', 80));
+
+            logger.LogInformation("Sampling test completed (not yet implemented in harness)");
+            return Task.FromResult(0);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Test failed");
+            Console.WriteLine($"\nError: {ex.Message}");
+            return Task.FromResult(1);
+        }
+    }
+}
+</file>
+
+<file path="Commands/TestToolsCommand.cs">
+using System.CommandLine;
+using System.CommandLine.Parsing;
+using McpFederationGateway.TestingCLI.Services;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+
+namespace McpFederationGateway.TestingCLI.Commands;
+
+public class TestToolsCommand : Command
+{
+    public TestToolsCommand() : base("test-tools", "List all available tools from configured MCPs")
+    {
+        SetAction(ExecuteAsync);
+    }
+
+    private async Task<int> ExecuteAsync(ParseResult parseResult)
+    {
+        var logger = Program.ServiceProvider.GetRequiredService<ILogger<TestToolsCommand>>();
+        var gatewayClient = Program.ServiceProvider.GetRequiredService<McpGatewayClient>();
+
+        try
+        {
+            logger.LogInformation("=== Test Tools Command ===");
+            logger.LogInformation("Listing all available tools...");
+
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+            var tools = await gatewayClient.ListToolsAsync(cts.Token);
+            var toolsList = tools.ToList();
+
+            Console.WriteLine($"\nFound {toolsList.Count} tools:");
+            Console.WriteLine(new string('-', 80));
+
+            foreach (var tool in toolsList)
+            {
+                Console.WriteLine($"Tool: {tool.Name}");
+                Console.WriteLine($"  Description: {tool.Description}");
+                Console.WriteLine();
+            }
+
+            logger.LogInformation("Test completed successfully");
+            return 0;
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Test failed");
+            return 1;
+        }
+    }
+}
+</file>
+
+<file path="Services/McpGatewayClient.cs">
+using System.Text.Json;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
+using ModelContextProtocol.Client;
+using ModelContextProtocol.Protocol;
+using OpenAI.Chat;
+
+namespace McpFederationGateway.TestingCLI.Services;
+
+public class McpGatewayClient : IAsyncDisposable
+{
+    private readonly ILogger<McpGatewayClient> _logger;
+    private McpClient? _client;
+    private bool _initialized;
+
+    public McpGatewayClient(ILogger<McpGatewayClient> logger)
+    {
+        _logger = logger;
+    }
+
+    public async Task InitializeAsync(IConfiguration configuration)
+    {
+        if (_initialized)
+        {
+            _logger.LogWarning("MCP Gateway Client already initialized");
+            return;
+        }
+
+        _logger.LogInformation("Initializing MCP Gateway Client...");
+
+        try
+        {
+            var gatewayConfig = configuration.GetSection("mcpGateway");
+            var transport = gatewayConfig["transport"] ?? throw new InvalidOperationException("Transport not configured");
+            var command = gatewayConfig["command"] ?? throw new InvalidOperationException("Command not configured");
+            var args = gatewayConfig.GetSection("args").Get<string[]>() ?? Array.Empty<string>();
+            var env = gatewayConfig.GetSection("env").Get<Dictionary<string, string>>() ?? new Dictionary<string, string>();
+            var openAiKey = configuration["ApiKeys:OpenAI"];
+
+            _logger.LogInformation("Connecting to gateway via {Transport}: {Command} {Args}",
+                transport, command, string.Join(" ", args));
+
+            if (transport != "stdio")
+            {
+                throw new NotSupportedException($"Transport '{transport}' is not supported. Only 'stdio' is currently supported.");
+            }
+
+            var clientTransport = new StdioClientTransport(new StdioClientTransportOptions
+            {
+                Name = "McpFederationGateway.TestingCLI",
+                Command = command,
+                Arguments = args,
+                EnvironmentVariables = env.ToDictionary(k => k.Key, v => (string?)v.Value)
+            });
+
+            var options = new McpClientOptions
+            {
+                ClientInfo = new Implementation { Name = "McpFederationGateway.TestingCLI", Version = "1.0.0" },
+                Capabilities = new ClientCapabilities { Sampling = new() }
+            };
+
+            if (!string.IsNullOrEmpty(openAiKey))
+            {
+                _logger.LogInformation("Configuring Sampling support with OpenAI...");
+                var chatClient = new ChatClient("gpt-5-mini", openAiKey);
+
+                options.Handlers = new McpClientHandlers
+                {
+                    SamplingHandler = async (requestParams, progress, token) => 
+                    {
+                         return await HandleSamplingAsync(chatClient, requestParams, token);
+                    }
+                };
+            }
+
+            _client = await McpClient.CreateAsync(clientTransport, options);
+            
+            _initialized = true;
+            _logger.LogInformation("MCP Gateway Client initialized successfully");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to initialize MCP Gateway Client");
+            throw;
+        }
+    }
+
+    private async Task<CreateMessageResult> HandleSamplingAsync(ChatClient chatClient, CreateMessageRequestParams request, CancellationToken ct)
+    {
+        _logger.LogInformation("Handling Sampling Request for model preference: {Hints}", string.Join(", ", request.ModelPreferences?.Hints?.Select(h => h.Name) ?? Array.Empty<string>()));
+
+        var messages = new List<ChatMessage>();
+        if (!string.IsNullOrEmpty(request.SystemPrompt))
+        {
+            messages.Add(new SystemChatMessage(request.SystemPrompt));
+        }
+
+        foreach (var msg in request.Messages) 
+        {
+            var text = string.Join("\n", msg.Content.OfType<TextContentBlock>().Select(c => c.Text));
+            if (string.IsNullOrEmpty(text)) continue;
+
+            if (msg.Role == Role.User) messages.Add(new UserChatMessage(text));
+            else if (msg.Role == Role.Assistant) messages.Add(new AssistantChatMessage(text));
+        }
+
+        var completion = await chatClient.CompleteChatAsync(messages, cancellationToken: ct);
+        var responseText = completion.Value.Content[0].Text;
+
+        return new CreateMessageResult
+        {
+             Role = Role.Assistant,
+             Content = new ContentBlock[] { new TextContentBlock { Text = responseText } },
+             Model = "gpt-5-mini",
+             StopReason = "end_turn"
+        };
+    }
+
+    public async Task<IEnumerable<Tool>> ListToolsAsync(CancellationToken cancellationToken = default)
+    {
+        EnsureInitialized();
+        // ... (existing)
+
+        _logger.LogInformation("Requesting tools list from gateway...");
+
+        try
+        {
+            var mcpTools = await _client!.ListToolsAsync(cancellationToken: cancellationToken);
+            var tools = mcpTools.Select(t => t.ProtocolTool).ToList();
+
+            _logger.LogInformation("Received {ToolCount} tools from gateway", tools.Count);
+
+            return tools;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to list tools");
+            throw;
+        }
+    }
+
+    public async Task<CallToolResult> CallToolAsync(string toolName, IDictionary<string, object?> arguments, CancellationToken cancellationToken = default)
+    {
+        EnsureInitialized();
+
+        _logger.LogInformation("Calling tool: {ToolName}", toolName);
+        _logger.LogDebug("Arguments: {Arguments}", JsonSerializer.Serialize(arguments));
+
+        try
+        {
+            var startTime = DateTime.UtcNow;
+
+            var readOnlyArgs = arguments as IReadOnlyDictionary<string, object?> ?? new Dictionary<string, object?>(arguments);
+            var result = await _client!.CallToolAsync(toolName, readOnlyArgs);
+
+            var elapsed = DateTime.UtcNow - startTime;
+            _logger.LogInformation("Tool call completed in {ElapsedMs}ms", elapsed.TotalMilliseconds);
+            _logger.LogDebug("Result: {Result}", JsonSerializer.Serialize(result));
+
+            return result;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to call tool: {ToolName}", toolName);
+            throw;
+        }
+    }
+
+    private void EnsureInitialized()
+    {
+        if (!_initialized || _client == null)
+        {
+            throw new InvalidOperationException("Client not initialized. Call InitializeAsync first.");
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_client != null)
+        {
+            _logger.LogInformation("Disposing MCP Gateway Client...");
+            await _client.DisposeAsync();
+            _client = null;
+        }
+
+        _initialized = false;
+    }
+}
+</file>
+
+<file path="appsettings.json">
+{
+  "Serilog": {
+    "MinimumLevel": {
+      "Default": "Verbose",
+      "Override": {
+        "Microsoft": "Warning",
+        "System": "Warning"
+      }
+    },
+    "WriteTo": [
+      {
+        "Name": "Console",
+        "Args": {
+          "theme": "Serilog.Sinks.SystemConsole.Themes.AnsiConsoleTheme::Code, Serilog.Sinks.Console",
+          "outputTemplate": "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj}{NewLine}{Exception}"
+        }
+      },
+      {
+        "Name": "File",
+        "Args": {
+          "path": "logs/test-.log",
+          "rollingInterval": "Day",
+          "rollOnFileSizeLimit": true,
+          "fileSizeLimitBytes": 10485760,
+          "retainedFileCountLimit": 5,
+          "outputTemplate": "[{Timestamp:HH:mm:ss} {Level:u3}] {SourceContext}: {Message:lj}{NewLine}{Exception}"
+        }
+      }
+    ]
+  }
+}
+</file>
+
+<file path="McpFederationGateway.TestingCLI.csproj">
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <PackageId>MicroAgents.McpFederationGateway.TestingCLI</PackageId>
+    <Authors>Igor Solomatov</Authors>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <Version>0.1.0-preview</Version>
+    <Description>Testing CLI for MCP Federation Gateway - provides commands to test gateway functionality, performance, and integration</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="OpenAI" Version="2.8.0" />
+    <PackageReference Include="System.CommandLine" Version="2.0.1" />
+    <PackageReference Include="Serilog" Version="4.2.0" />
+    <PackageReference Include="Serilog.Sinks.Console" Version="6.0.0" />
+    <PackageReference Include="Serilog.Sinks.File" Version="6.0.0" />
+    <PackageReference Include="Serilog.Extensions.Logging" Version="8.0.0" />
+    <PackageReference Include="Serilog.Settings.Configuration" Version="8.0.4" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="10.0.1" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="10.0.0" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.1" />
+    <PackageReference Include="ModelContextProtocol" Version="0.5.0-preview.1" />
+  </ItemGroup>
+
+
+  <ItemGroup>
+    <None Update="appsettings.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="appsettings.secrets.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="testingcli-config.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+</Project>
+</file>
+
+<file path="Program.cs">
+using System.CommandLine;
+using System.CommandLine.Parsing;
+using McpFederationGateway.TestingCLI.Commands;
+using McpFederationGateway.TestingCLI.Services;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using Serilog;
+
+namespace McpFederationGateway.TestingCLI;
+
+public static class Program
+{
+    public static IServiceProvider ServiceProvider { get; private set; } = null!;
+
+    public static async Task<int> Main(string[] args)
+    {
+        // Build configuration
+        var configuration = new ConfigurationBuilder()
+            .SetBasePath(Directory.GetCurrentDirectory())
+            .AddJsonFile("appsettings.json", optional: false)
+            .AddJsonFile("appsettings.secrets.json", optional: true)
+            .AddJsonFile("testingcli-config.json", optional: false)
+            .AddEnvironmentVariables()
+            .Build();
+
+        // Configure Serilog
+        var loggerConfig = new LoggerConfiguration();
+
+        // Read from appsettings.json Serilog section
+        var serilogSection = configuration.GetSection("Serilog");
+        if (serilogSection.Exists())
+        {
+            loggerConfig = loggerConfig.ReadFrom.Configuration(configuration);
+        }
+        else
+        {
+            // Fallback configuration
+            loggerConfig = loggerConfig
+                .MinimumLevel.Verbose()
+                .WriteTo.Console()
+                .WriteTo.File("logs/test-.log", rollingInterval: RollingInterval.Day);
+        }
+
+        Log.Logger = loggerConfig.CreateLogger();
+
+        try
+        {
+            Log.Information("Starting MCP Federation Gateway Testing CLI...");
+
+            // Setup DI
+            var services = new ServiceCollection();
+
+            // Add logging
+            services.AddLogging(builder =>
+            {
+                builder.ClearProviders();
+                builder.AddSerilog(dispose: true);
+            });
+
+            // Add configuration
+            services.AddSingleton<IConfiguration>(configuration);
+
+            // Add MCP Gateway Client
+            services.AddSingleton<McpGatewayClient>();
+
+            ServiceProvider = services.BuildServiceProvider();
+
+            // Initialize MCP Gateway Client
+            var gatewayClient = ServiceProvider.GetRequiredService<McpGatewayClient>();
+            await gatewayClient.InitializeAsync(configuration);
+
+            // Build command line
+            var rootCommand = new RootCommand("MCP Federation Gateway Testing CLI - Test commands for gateway functionality via MCP protocol");
+
+            rootCommand.Subcommands.Add(new TestToolsCommand());
+            rootCommand.Subcommands.Add(new TestCallCommand());
+            rootCommand.Subcommands.Add(new TestFederatedCommand());
+            rootCommand.Subcommands.Add(new TestConfigCommand());
+            rootCommand.Subcommands.Add(new TestSamplingCommand());
+            rootCommand.Subcommands.Add(new TestPerformanceCommand());
+
+            var result = await rootCommand.Parse(args).InvokeAsync();
+
+            await gatewayClient.DisposeAsync();
+
+            Log.Information("Testing CLI completed with exit code {ExitCode}", result);
+            return result;
+        }
+        catch (Exception ex)
+        {
+            Log.Fatal(ex, "Application terminated unexpectedly");
+            return 1;
+        }
+        finally
+        {
+            await Log.CloseAndFlushAsync();
+        }
+    }
+}
+</file>
+
+<file path="testingcli-config.json">
+{
+  "mcpGateway": {
+    "transport": "stdio",
+    "command": "/Users/igor/Sources/MicroAgentsNet/repos/McpFederationGateway/src/McpFederationGateway/bin/Debug/net10.0/McpFederationGateway",
+    "args": ["--transport", "stdio"],
+    "env": {
+      "MICROAGENTS_CONFIG": "/Users/igor/Sources/MicroAgentsNet/repos/McpFederationGateway/src/McpFederationGateway.TestingCLI/.microagents/gateway-config.json",
+      "ASPNETCORE_URLS": "http://localhost:5050"
+    }
+  }
+}
+</file>
+
+</files>

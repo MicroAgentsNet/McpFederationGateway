@@ -1,17 +1,20 @@
+using System.Diagnostics.CodeAnalysis;
+
 namespace McpFederationGateway.Models;
 
 /// <summary>
 /// Represents a message in a chat conversation.
-/// Based on LLMTornado's ChatMessage design but simplified for our needs.
 /// </summary>
-public class ChatMessage
+public record ChatMessage
 {
     /// <summary>
     /// Creates a new ChatMessage with User role by default.
     /// </summary>
+    [SetsRequiredMembers]
     public ChatMessage()
     {
         Role = ChatRole.User;
+        Content = null;
     }
 
     /// <summary>
@@ -19,7 +22,8 @@ public class ChatMessage
     /// </summary>
     /// <param name="role">The role of the message sender.</param>
     /// <param name="content">The text content of the message.</param>
-    public ChatMessage(ChatRole role, string content)
+    [SetsRequiredMembers]
+    public ChatMessage(ChatRole role, string? content)
     {
         Role = role;
         Content = content;
@@ -28,15 +32,15 @@ public class ChatMessage
     /// <summary>
     /// The role of the message sender (System, User, or Assistant).
     /// </summary>
-    public ChatRole Role { get; set; }
+    public required ChatRole Role { get; init; }
 
     /// <summary>
     /// The text content of the message.
     /// </summary>
-    public string? Content { get; set; }
+    public required string? Content { get; init; }
 
     /// <summary>
     /// Optional name of the sender (for multi-user chats).
     /// </summary>
-    public string? Name { get; set; }
+    public string? Name { get; init; }
 }

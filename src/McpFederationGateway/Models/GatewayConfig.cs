@@ -1,13 +1,13 @@
 namespace McpFederationGateway.Models;
 
-public class GatewayConfig
+public record GatewayConfig
 {
-    public List<McpServerConfig> Servers { get; set; } = new();
-    public LlmConfig? Llm { get; set; }
+    public List<McpServerConfig> Servers { get; init; } = new();
+    public LlmConfig? Llm { get; init; }
 }
 
-public class LlmConfig
+public record LlmConfig
 {
-    public string? DefaultModel { get; set; }
-    public double? Temperature { get; set; }
+    public string? DefaultModel { get; init; }
+    public double? Temperature { get; init; }
 }

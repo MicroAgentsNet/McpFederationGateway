@@ -93,9 +93,13 @@ public class SamplingMicroAgentChatClient : IMicroAgentChatClient
 
         try
         {
-            _logger.LogInformation("Requesting sampling from client...");
+            _logger.LogInformation("Requesting sampling from client. SystemPrompt: {SystemPromptLength}, Messages: {MessageCount}, Model: {ModelHints}", 
+                createMessageRequest.SystemPrompt?.Length ?? 0, 
+                createMessageRequest.Messages.Count(),
+                string.Join(",", createMessageRequest.ModelPreferences?.Hints?.Select(h => h.Name) ?? Array.Empty<string>()));
             
             var result = await _server.SampleAsync(createMessageRequest, cancellationToken);
+            _logger.LogInformation("Received sampling response. Model: {Model}, StopReason: {StopReason}", result.Model, result.StopReason);
             
             var sb = new System.Text.StringBuilder();
             if (result.Content != null)

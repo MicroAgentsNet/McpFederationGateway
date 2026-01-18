@@ -1,71 +1,76 @@
-using McpFederationGateway;
+// Step 2: Add ConfigurationService
 using McpFederationGateway.Interfaces;
 using McpFederationGateway.Services;
 using ModelContextProtocol;
+using ModelContextProtocol.Client;
 using ModelContextProtocol.Protocol;
 using ModelContextProtocol.Server;
-using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using System.Linq;
 
-var builder = WebApplication.CreateSlimBuilder(args);
+var builder = Host.CreateApplicationBuilder(args);
 
-builder.Services.ConfigureHttpJsonOptions(options =>
+builder.Logging.AddConsole(options =>
 {
-    options.SerializerOptions.TypeInfoResolverChain.Insert(0, SourceGenerationContext.Default);
+    options.LogToStandardErrorThreshold = LogLevel.Trace;
 });
 
-// Configure all logs to go to stderr (stdout is used for the MCP protocol messages).
-builder.Logging.AddConsole(o => o.LogToStandardErrorThreshold = LogLevel.Trace);
-
-// Register custom services
+// Add services
 builder.Services.AddSingleton<IConfigurationService, ConfigurationService>();
 builder.Services.AddSingleton<IMcpClientFactory, McpClientFactory>();
-builder.Services.AddSingleton<IAggregationService, AggregationService>();
 
-// Chat and Routing (Scoped because they depend on the session's McpServer for Sampling)
-builder.Services.AddScoped<IMicroAgentChatClient, SamplingMicroAgentChatClient>();
-builder.Services.AddScoped<IRouterService, RouterService>();
-
-var mcpBuilder = builder.Services.AddMcpServer(options => 
+builder.Services.AddMcpServer(options =>
 {
-    options.ServerInfo = new Implementation 
-    { 
-        Name = "McpFederationGateway", 
-        Version = "1.0.0" 
-    };
+    options.ServerInfo = new Implementation { Name = "GatewayWithConfig", Version = "1.0.0" };
 })
 .WithListToolsHandler(async (context, ct) =>
 {
-    var aggregator = context.Services!.GetRequiredService<IAggregationService>();
-    var tools = await aggregator.GetToolsAsync();
-    return new ListToolsResult { Tools = tools.ToList() };
+    Console.Error.WriteLine(">>> ListTools called, using ConfigurationService...");
+
+    var configService = context.Services!.GetRequiredService<IConfigurationService>();
+    var factory = context.Services!.GetRequiredService<IMcpClientFactory>();
+    
+    var config = await configService.GetConfigAsync();
+    var repomixConfig = config.Servers.FirstOrDefault(s => s.Name == "repomix");
+    
+    if (repomixConfig == null)
+    {
+        Console.Error.WriteLine(">>> No repomix config found, using hardcoded");
+        repomixConfig = new McpFederationGateway.Models.McpServerConfig
+        {
+            Name = "repomix",
+            Transport = McpFederationGateway.Models.McpTransportType.Stdio,
+            Command = "npx",
+            Arguments = ["-y", "repomix", "--mcp"],
+            Mode = McpFederationGateway.Models.McpOperationMode.Direct
+        };
+    }
+
+    try
+    {
+        Console.Error.WriteLine($">>> Creating client for {repomixConfig.Name}...");
+        var client = await factory.GetClientAsync(repomixConfig);
+        Console.Error.WriteLine(">>> Client created!");
+
+        var tools = await client.ListToolsAsync(cancellationToken: ct);
+        Console.Error.WriteLine($">>> Got {tools.Count()} tools");
+
+        return new ListToolsResult
+        {
+            Tools = tools.Select(t => new Tool
+            {
+                Name = $"repomix_{t.Name}",
+                Description = t.Description
+            }).ToList()
+        };
+    }
+    catch (Exception ex)
+    {
+        Console.Error.WriteLine($">>> ERROR: {ex.Message}");
+        throw;
+    }
 })
-.WithCallToolHandler(async (context, ct) =>
-{
-    var router = context.Services!.GetRequiredService<IRouterService>();
-    var request = context.Params!;
-    var args = request.Arguments?.ToDictionary(kvp => kvp.Key, kvp => (object?)kvp.Value) ?? new Dictionary<string, object?>();
-    return await router.CallToolAsync(request.Name, args, ct);
-});
+.WithStdioServerTransport();
 
-bool isStdio = args.Contains("--transport") && args[args.ToList().IndexOf("--transport") + 1].ToLower() == "stdio";
-
-if (isStdio)
-{
-    mcpBuilder.WithStdioServerTransport();
-}
-else
-{
-    mcpBuilder.WithHttpTransport();
-}
-
-var app = builder.Build();
-
-if (!isStdio)
-{
-    app.MapMcp();
-}
-
-await app.RunAsync();
+await builder.Build().RunAsync();

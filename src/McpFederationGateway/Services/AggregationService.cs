@@ -29,7 +29,7 @@ public class AggregationService : IAggregationService
             var serverName = serverConfig.Name;
             try
             {
-                if (serverConfig.Mode.ToLower() == "federated")
+                if (serverConfig.Mode == McpOperationMode.Federated)
                 {
                     continue;
                 }
@@ -62,12 +62,12 @@ public class AggregationService : IAggregationService
             InputSchema = JsonSerializer.Deserialize(@"{
                 ""type"": ""object"",
                 ""properties"": {
-                    ""mcp_server_name"": {
+                    ""server_name"": {
                         ""type"": ""string"",
                         ""description"": ""The name of the federated MCP server to get documentation for""
                     }
                 },
-                ""required"": [""mcp_server_name""]
+                ""required"": []
             }", AppJsonContext.Default.JsonElement)
         });
 

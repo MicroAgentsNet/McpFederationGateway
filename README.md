@@ -6,9 +6,22 @@
 [![.NET](https://img.shields.io/badge/.NET-10.0-blue.svg)](https://dotnet.microsoft.com/download/dotnet/10.0)
 [![AOT](https://img.shields.io/badge/NativeAOT-Supported-orange.svg)]()
 
+> ⚠️ **Status: Alpha Development**
+> This project is currently in an **Alpha state** and is actively under development. Features are being implemented, and breaking changes may occur frequently. It is not yet recommended for production use.
+
 > The ultimate federated entry point for the Model Context Protocol (MCP) ecosystem.
 
 `McpFederationGateway` is a high-performance, **Native AOT-compiled** .NET 10 service that acts as a reverse proxy and aggregator for multiple upstream MCP servers. It provides a unified interface for agents, dramatically reduces context consumption (**up to 40% token savings**), and delivers enterprise-grade security and policy enforcement—whether you're running locally on your laptop or deploying centrally for your entire organization.
+
+---
+
+## 🚦 Project Status
+
+- **Current State**: Alpha (Active Development)
+- **Version**: `0.1.0-preview`
+- **Goal**: Provide a production-ready federated gateway for the MCP ecosystem.
+- **Completed**: Core routing, tool aggregation, multi-transport support (Stdio/SSE), and AOT compatibility.
+- **In Progress**: Policy engine, authentication, and advanced documentation generation.
 
 ---
 
@@ -167,6 +180,62 @@ In **Federated Mode**, the gateway exposes two primary tools to interact with th
 | :----------- | :---------------------------------------------------------------------------------------------------------- |
 | `how_to_use` | Provides documentation, summaries, and usage guides for a specific federated MCP server using the host LLM. |
 | `call`       | Dynamically invokes any tool on any federated server by specifying `server_name` and `tool_name`.           |
+
+---
+
+## 🧪 Testing CLI
+
+The `McpFederationGatewayTestingCLI` is a comprehensive testing harness designed to validate and benchmark the MCP Federation Gateway functionality. It provides automated testing capabilities for tool discovery, invocation, configuration validation, and performance analysis.
+
+### Key Features
+
+- **6 Test Commands**: Comprehensive coverage of gateway functionality
+- **Verbose Logging**: Dual output to console and file for detailed diagnostics
+- **Modern CLI**: Built with System.CommandLine 2.0.1 for robust argument parsing
+- **Non-Interactive**: All tests accept input via command-line arguments only
+
+### Available Test Commands
+
+| Command              | Description                                                                 |
+| :------------------- | :-------------------------------------------------------------------------- |
+| `test-tools`         | List all available tools from configured MCPs via the gateway               |
+| `test-call`          | Direct tool invocation with specified arguments                             |
+| `test-federated`     | Test federated mode meta-tools (`how_to_use`, `call`)                       |
+| `test-config`        | Configuration validation and hierarchical merging (user + workspace)        |
+| `test-sampling`      | MCP sampling functionality tests                                            |
+| `test-performance`   | Performance benchmarks including latency (p50/p95/p99) and throughput tests |
+
+### Configuration Files
+
+The Testing CLI uses the following configuration files:
+
+- `appsettings.json`: Logging configuration and test settings
+- `appsettings.secrets.json`: API keys and sensitive configuration (git-ignored)
+- `testingcli-config.json`: MCP server definitions and gateway configuration
+
+### Usage Example
+
+```bash
+# List all available tools from configured MCPs
+dotnet run --project src/McpFederationGateway.TestingCLI -- test-tools
+
+# Test direct tool invocation with Context7
+dotnet run --project src/McpFederationGateway.TestingCLI -- test-call \
+  --tool context7_query_docs \
+  --args '{"libraryId":"/dotnet/command-line-api","query":"latest version"}'
+
+# Test federated mode with Playwright MCP
+dotnet run --project src/McpFederationGateway.TestingCLI -- test-federated \
+  --server playwright \
+  --tool screenshot \
+  --args '{"url":"https://example.com"}'
+
+# Run performance benchmarks
+dotnet run --project src/McpFederationGateway.TestingCLI -- test-performance \
+  --iterations 10
+```
+
+All test executions generate detailed logs in the `logs/` directory with timestamps, including raw requests and responses for debugging purposes.
 
 ---
 

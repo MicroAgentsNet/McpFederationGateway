@@ -1,29 +1,29 @@
-using Microsoft.Extensions.AI;
+using System.Text.Json.Serialization;
 
 namespace McpFederationGateway.Models;
 
 /// <summary>
 ///     Chat outbound features supported only by a single/few providers with no shared equivalent.
 /// </summary>
-public class ChatRequestVendorExtensions
+public record ChatRequestVendorExtensions
 {
-    public AnthropicExtensions? Anthropic { get; set; }
-    public GoogleExtensions? Google { get; set; }
+    public AnthropicExtensions? Anthropic { get; init; }
+    public GoogleExtensions? Google { get; init; }
 }
 
-public class AnthropicExtensions
+public record AnthropicExtensions
 {
-    public string? Thinking { get; set; }
+    public string? Thinking { get; init; }
 }
 
-public class GoogleExtensions
+public record GoogleExtensions
 {
-    public bool? UseSearch { get; set; }
+    public bool? UseSearch { get; init; }
 }
 
-public class MicroAgentChatRequest
+public record MicroAgentChatRequest
 {
-    public IList<ChatMessage> Messages { get; set; } = new List<ChatMessage>();
-    public ChatOptions? Options { get; set; }
-    public ChatRequestVendorExtensions? VendorExtensions { get; set; }
+    public IList<ChatMessage> Messages { get; init; } = new List<ChatMessage>();
+    public ChatOptions? Options { get; init; }
+    public ChatRequestVendorExtensions? VendorExtensions { get; init; }
 }

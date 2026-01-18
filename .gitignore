@@ -9,3 +9,10 @@
 *.suo
 bin/
 obj/
+
+# TestingCLI specific
+logs/
+appsettings.secrets.json
+.microagents/
+/agents/temp
+/agents/comm

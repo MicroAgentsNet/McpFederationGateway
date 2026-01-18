@@ -2,6 +2,7 @@
   <Folder Name="/src/">
     <Project Path="src/McpFederationGateway.CLI/McpFederationGateway.CLI.csproj" />
     <Project Path="src/McpFederationGateway/McpFederationGateway.csproj" />
+    <Project Path="src/McpFederationGateway.TestingCLI/McpFederationGateway.TestingCLI.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/DummyServer/DummyServer.csproj" />

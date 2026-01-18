@@ -1,11 +1,48 @@
+using System.Text.Json.Serialization;
+
 namespace McpFederationGateway.Models;
 
-public class McpServerConfig
+/// <summary>
+///     The transport type used to communicate with an MCP server.
+/// </summary>
+[JsonConverter(typeof(JsonStringEnumConverter<McpTransportType>))]
+public enum McpTransportType
 {
-    public string Name { get; set; } = string.Empty;
-    public string Transport { get; set; } = "stdio"; // stdio or http
-    public string Mode { get; set; } = "direct"; // direct or federated
-    public string? Command { get; set; }
-    public string[]? Arguments { get; set; }
-    public string? Url { get; set; }
+    /// <summary>
+    ///     Standard input/output protocol.
+    /// </summary>
+    Stdio,
+
+    /// <summary>
+    ///     HTTP with Server-Sent Events (SSE).
+    /// </summary>
+    Http
+}
+
+/// <summary>
+///     Operational mode for how tools from the MCP server are exposed.
+/// </summary>
+[JsonConverter(typeof(JsonStringEnumConverter<McpOperationMode>))]
+public enum McpOperationMode
+{
+    /// <summary>
+    ///     Directly exposes tools from the MCP server with a prefix.
+    /// </summary>
+    Direct,
+
+    /// <summary>
+    ///     Hides tools from the main list, allowing access via meta-tools only.
+    /// </summary>
+    Federated
+}
+
+public record McpServerConfig
+{
+    public required string Name { get; init; }
+    public McpTransportType Transport { get; init; } = McpTransportType.Stdio;
+    public McpOperationMode Mode { get; init; } = McpOperationMode.Direct;
+    public string? Command { get; init; }
+    public string[]? Arguments { get; init; }
+    public string? Url { get; init; }
+    public Dictionary<string, string>? Env { get; init; }
 }
