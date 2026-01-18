@@ -20,29 +20,13 @@ public static class Program
             .SetBasePath(Directory.GetCurrentDirectory())
             .AddJsonFile("appsettings.json", optional: false)
             .AddJsonFile("appsettings.secrets.json", optional: true)
-            .AddJsonFile("testingcli-config.json", optional: false)
             .AddEnvironmentVariables()
             .Build();
 
         // Configure Serilog
-        var loggerConfig = new LoggerConfiguration();
-
-        // Read from appsettings.json Serilog section
-        var serilogSection = configuration.GetSection("Serilog");
-        if (serilogSection.Exists())
-        {
-            loggerConfig = loggerConfig.ReadFrom.Configuration(configuration);
-        }
-        else
-        {
-            // Fallback configuration
-            loggerConfig = loggerConfig
-                .MinimumLevel.Verbose()
-                .WriteTo.Console()
-                .WriteTo.File("logs/test-.log", rollingInterval: RollingInterval.Day);
-        }
-
-        Log.Logger = loggerConfig.CreateLogger();
+        Log.Logger = new LoggerConfiguration()
+            .ReadFrom.Configuration(configuration)
+            .CreateLogger();
 
         try
         {

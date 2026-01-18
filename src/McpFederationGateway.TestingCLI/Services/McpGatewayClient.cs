@@ -120,7 +120,7 @@ public class McpGatewayClient : IAsyncDisposable
             var completionTime = Stopwatch.StartNew();
             var completion = await chatClient.CompleteChatAsync(messages, cancellationToken: ct);
             completionTime.Stop();
-            _logger.LogInformation("Received response from OpenAI in {CompletionTime}");
+            _logger.LogInformation("Received response from OpenAI in {CompletionTime}", completionTime.Elapsed);
 
             var responseText = completion.Value.Content[0].Text;
 
