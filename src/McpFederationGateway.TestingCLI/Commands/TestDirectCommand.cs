@@ -1,3 +1,4 @@
+/*
 using System.CommandLine;
 using System.CommandLine.Parsing;
 using System.Text.Json;
@@ -97,3 +98,4 @@ public class TestDirectCommand : Command
         }
     }
 }
+*/

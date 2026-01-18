@@ -22,25 +22,25 @@ public class RouterService : IRouterService
         _logger = logger;
     }
 
-    public async Task<CallToolResult> CallToolAsync(string fullName, IDictionary<string, object?> arguments, CancellationToken cancellationToken)
+    public async Task<CallToolResult> CallToolAsync(string fullName, IDictionary<string, object?>? arguments, CancellationToken cancellationToken)
     {
+        var validArgs = arguments ?? new Dictionary<string, object?>();
         _logger.LogInformation("RouterService received CallTool: {ToolName}", fullName);
-        if (arguments != null)
+        
+        foreach (var kvp in validArgs)
         {
-            foreach (var kvp in arguments)
-            {
-                _logger.LogInformation("Arg: {Key}, Type: {Type}, Value: {Value}", kvp.Key, kvp.Value?.GetType().Name ?? "null", kvp.Value);
-            }
+            _logger.LogInformation("Arg: {Key}, Type: {Type}, Value: {Value}", kvp.Key, kvp.Value?.GetType().Name ?? "null", kvp.Value);
         }
+
         if (fullName == "call")
         {
-            if (!McpUtility.TryGetString(arguments, "server_name", out var serverName) || string.IsNullOrEmpty(serverName))
+            if (!McpUtility.TryGetString(validArgs, "server_name", out var serverName) || string.IsNullOrEmpty(serverName))
                 throw new ArgumentException("Argument 'server_name' is required for 'call' tool");
 
-            if (!McpUtility.TryGetString(arguments, "tool_name", out var toolName) || string.IsNullOrEmpty(toolName))
+            if (!McpUtility.TryGetString(validArgs, "tool_name", out var toolName) || string.IsNullOrEmpty(toolName))
                 throw new ArgumentException("Argument 'tool_name' is required for 'call' tool");
 
-            var actualArgs = McpUtility.TryGetDictionary(arguments, "arguments", out var args)
+            var actualArgs = McpUtility.TryGetDictionary(validArgs, "arguments", out var args)
                 ? args
                 : new Dictionary<string, object?>();
 
@@ -49,8 +49,8 @@ public class RouterService : IRouterService
 
         if (fullName == "how_to_use")
         {
-            McpUtility.TryGetString(arguments, "server_name", out var targetName);
-            McpUtility.TryGetString(arguments, "topic", out var topic);
+            McpUtility.TryGetString(validArgs, "server_name", out var targetName);
+            McpUtility.TryGetString(validArgs, "topic", out var topic);
 
             if (string.IsNullOrEmpty(targetName))
             {
@@ -67,7 +67,7 @@ public class RouterService : IRouterService
         {
             var serverName = fullName.Substring(0, firstUnderscore);
             var toolName = fullName.Substring(firstUnderscore + 1);
-            return await InvokeDirectAsync(serverName, toolName, arguments, cancellationToken);
+            return await InvokeDirectAsync(serverName, toolName, validArgs, cancellationToken);
         }
 
         throw new KeyNotFoundException($"Tool {fullName} not found.");

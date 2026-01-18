@@ -1,4 +1,5 @@
 using System.CommandLine;
+using System.CommandLine.Parsing;
 using System.Text.Json;
 using McpFederationGateway.Interfaces;
 using McpFederationGateway.Services;
@@ -13,12 +14,18 @@ class Program
     {
         var rootCommand = new RootCommand("MicroAgents MCP Federation Gateway CLI");
 
-        var serverOption = new Option<string>("--server", () => "repomix", "Server name to test");
-        var testCommand = new Command("test", "Run direct gateway service tests");
-        testCommand.AddOption(serverOption);
-
-        testCommand.SetHandler(async (string serverName) =>
+        var serverOption = new Option<string>("--server", "Server name to test")
         {
+             DefaultValueFactory = _ => "repomix"
+        };
+        
+        var testCommand = new Command("test", "Run direct gateway service tests");
+        testCommand.Options.Add(serverOption);
+
+        testCommand.SetAction(async parseResult =>
+        {
+            var serverName = parseResult.GetValue(serverOption) ?? "repomix";
+            
             Console.WriteLine("=== MCP Federation Gateway Direct Test ===\n");
             Console.WriteLine($"Testing server: {serverName}\n");
 
@@ -72,13 +79,13 @@ class Program
                 Console.WriteLine($"\nError: {ex.Message}");
                 Console.WriteLine($"Stack trace: {ex.StackTrace}");
             }
-        }, serverOption);
+        });
 
         var adminCommand = new Command("admin", "Administrative commands");
         // Future implementation
 
-        rootCommand.Add(testCommand);
-        rootCommand.Add(adminCommand);
+        rootCommand.Subcommands.Add(testCommand);
+        rootCommand.Subcommands.Add(adminCommand);
 
         return await rootCommand.Parse(args).InvokeAsync();
     }

@@ -69,6 +69,7 @@ public class McpGatewayClient : IAsyncDisposable
                     SamplingHandler = async (requestParams, progress, token) =>
                     {
                          _logger.LogInformation(">>> SAMPLING HANDLER INVOKED <<<");
+                         if (requestParams == null) throw new ArgumentNullException(nameof(requestParams));
                          return await HandleSamplingAsync(chatClient, requestParams, token);
                     }
                 };
