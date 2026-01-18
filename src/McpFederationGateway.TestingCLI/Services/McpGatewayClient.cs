@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Text.Json;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -68,15 +69,15 @@ public class McpGatewayClient : IAsyncDisposable
                 {
                     SamplingHandler = async (requestParams, progress, token) =>
                     {
-                         _logger.LogInformation(">>> SAMPLING HANDLER INVOKED <<<");
-                         if (requestParams == null) throw new ArgumentNullException(nameof(requestParams));
-                         return await HandleSamplingAsync(chatClient, requestParams, token);
+                        _logger.LogInformation(">>> SAMPLING HANDLER INVOKED <<<");
+                        if (requestParams == null) throw new ArgumentNullException(nameof(requestParams));
+                        return await HandleSamplingAsync(chatClient, requestParams, token);
                     }
                 };
             }
 
             _client = await McpClient.CreateAsync(clientTransport, options);
-            
+
             _initialized = true;
             _logger.LogInformation("MCP Gateway Client initialized successfully");
         }
@@ -91,11 +92,15 @@ public class McpGatewayClient : IAsyncDisposable
     {
         try
         {
-            _logger.LogInformation("Handling Sampling Request for model preference: {Hints}", string.Join(", ", request.ModelPreferences?.Hints?.Select(h => h.Name) ?? Array.Empty<string>()));
+            if (request.ModelPreferences?.Hints?.Where(h => !string.IsNullOrWhiteSpace(h.Name)).Any() ?? false)
+            {
+                _logger.LogInformation("Sampling Request for model preference: {Hints}", string.Join(", ", request.ModelPreferences?.Hints?.Where(h => !string.IsNullOrWhiteSpace(h.Name)).Select(h => h.Name) ?? Array.Empty<string>()));
+            }
 
             var messages = new List<ChatMessage>();
             if (!string.IsNullOrEmpty(request.SystemPrompt))
             {
+                _logger.LogInformation("Sampling Request system prompt: {SystemPrompt}", request.SystemPrompt);
                 messages.Add(new SystemChatMessage(request.SystemPrompt));
             }
 
@@ -104,22 +109,27 @@ public class McpGatewayClient : IAsyncDisposable
                 var text = string.Join("\n", msg.Content.OfType<TextContentBlock>().Select(c => c.Text));
                 if (string.IsNullOrEmpty(text)) continue;
 
+                _logger.LogInformation("Sampling Request message: {Role} {Message}", msg.Role, text);
+
                 if (msg.Role == Role.User) messages.Add(new UserChatMessage(text));
                 else if (msg.Role == Role.Assistant) messages.Add(new AssistantChatMessage(text));
             }
 
             _logger.LogInformation("Sending {MessageCount} messages to OpenAI (model: gpt-5-mini)...", messages.Count);
+
+            var completionTime = Stopwatch.StartNew();
             var completion = await chatClient.CompleteChatAsync(messages, cancellationToken: ct);
-            _logger.LogInformation("Received response from OpenAI");
+            completionTime.Stop();
+            _logger.LogInformation("Received response from OpenAI in {CompletionTime}");
 
             var responseText = completion.Value.Content[0].Text;
 
             return new CreateMessageResult
             {
-                 Role = Role.Assistant,
-                 Content = new ContentBlock[] { new TextContentBlock { Text = responseText } },
-                 Model = "gpt-5-mini",
-                 StopReason = "end_turn"
+                Role = Role.Assistant,
+                Content = new ContentBlock[] { new TextContentBlock { Text = responseText } },
+                Model = "gpt-5-mini",
+                StopReason = "end_turn"
             };
         }
         catch (Exception ex)

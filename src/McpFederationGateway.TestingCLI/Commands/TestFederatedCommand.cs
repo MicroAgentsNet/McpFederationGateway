@@ -11,6 +11,7 @@ public class TestFederatedCommand : Command
 {
     private readonly Option<string> _serverOption;
     private readonly Option<string?> _toolOption;
+    private readonly Option<string?> _topicOption;
 
     public TestFederatedCommand() : base("test-federated", "Test federated mode (how_to_use and call meta-tools)")
     {
@@ -25,8 +26,14 @@ public class TestFederatedCommand : Command
             Description = "Tool name to call (optional, will use how_to_use if not provided)"
         };
 
+        _topicOption = new Option<string?>("--topic")
+        {
+            Description = "Topic for how_to_use (optional, defaults to 'overview')"
+        };
+
         Options.Add(_serverOption);
         Options.Add(_toolOption);
+        Options.Add(_topicOption);
 
         SetAction(ExecuteAsync);
     }
@@ -35,6 +42,7 @@ public class TestFederatedCommand : Command
     {
         var serverName = parseResult.GetValue(_serverOption)!;
         var toolName = parseResult.GetValue(_toolOption);
+        var topic = parseResult.GetValue(_topicOption);
         var logger = Program.ServiceProvider.GetRequiredService<ILogger<TestFederatedCommand>>();
         var gatewayClient = Program.ServiceProvider.GetRequiredService<McpGatewayClient>();
 
@@ -42,6 +50,7 @@ public class TestFederatedCommand : Command
         {
             logger.LogInformation("=== Test Federated Command ===");
             logger.LogInformation("Server: {ServerName}", serverName);
+            logger.LogInformation("Topic: {Topic}", topic);
 
             Console.WriteLine($"\nTesting federated mode for server: {serverName}");
             Console.WriteLine(new string('-', 80));
@@ -55,7 +64,7 @@ public class TestFederatedCommand : Command
             if (!string.IsNullOrEmpty(serverName))
             {
                 howToUseArgs["server_name"] = serverName;
-                howToUseArgs["topic"] = "overview";
+                howToUseArgs["topic"] = topic ?? "overview";
             }
             
             var howToUseResult = await gatewayClient.CallToolAsync("how_to_use", howToUseArgs, cts.Token);

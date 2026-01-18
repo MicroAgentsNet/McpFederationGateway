@@ -26,7 +26,7 @@ public class RouterService : IRouterService
     {
         var validArgs = arguments ?? new Dictionary<string, object?>();
         _logger.LogInformation("RouterService received CallTool: {ToolName}", fullName);
-        
+
         foreach (var kvp in validArgs)
         {
             _logger.LogInformation("Arg: {Key}, Type: {Type}, Value: {Value}", kvp.Key, kvp.Value?.GetType().Name ?? "null", kvp.Value);
@@ -44,7 +44,7 @@ public class RouterService : IRouterService
                 ? args
                 : new Dictionary<string, object?>();
 
-             return await InvokeDirectAsync(serverName, toolName, actualArgs, cancellationToken);
+            return await InvokeDirectAsync(serverName, toolName, actualArgs, cancellationToken);
         }
 
         if (fullName == "how_to_use")
@@ -57,7 +57,18 @@ public class RouterService : IRouterService
                 return await GenerateGlobalDocumentationAsync(cancellationToken);
             }
 
-            // Use new method without sampling
+            var passThroughKeywords = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            {
+                "overview", "all", "as-is", "original"
+            };
+
+            bool useAi = !string.IsNullOrWhiteSpace(topic) && !passThroughKeywords.Contains(topic);
+
+            if (useAi)
+            {
+                return await GenerateDocumentationWithSamplingAsync(targetName, topic!, cancellationToken);
+            }
+
             return await GenerateDocumentationWithoutSamplingAsync(targetName, topic, cancellationToken);
         }
 
@@ -84,17 +95,15 @@ public class RouterService : IRouterService
         return await client.CallToolAsync(toolName, readOnlyArgs);
     }
 
-    // Original method using sampling (kept for reference)
-    private async Task<CallToolResult> GenerateDocumentationAsync(string serverName, string? topic, CancellationToken cancellationToken)
+    private async Task<CallToolResult> GenerateDocumentationWithSamplingAsync(string serverName, string topic, CancellationToken cancellationToken)
     {
-        _logger.LogInformation(">>> GenerateDocumentationAsync START for {ServerName}", serverName);
+        _logger.LogInformation(">>> GenerateDocumentationWithSamplingAsync START for {ServerName} with topic: {Topic}", serverName, topic);
         var config = await _configService.GetConfigAsync();
         var serverConfig = config.Servers.FirstOrDefault(s => s.Name == serverName)
             ?? throw new KeyNotFoundException($"Server {serverName} not found in configuration.");
 
         _logger.LogInformation(">>> Calling GetClientAsync for {ServerName}", serverName);
         var client = await _clientFactory.GetClientAsync(serverConfig);
-        _logger.LogInformation(">>> GetClientAsync completed for {ServerName}", serverName);
 
         _logger.LogInformation(">>> Calling ListToolsAsync for {ServerName}", serverName);
         var tools = await client.ListToolsAsync(cancellationToken: cancellationToken);
@@ -108,9 +117,9 @@ public class RouterService : IRouterService
             Available tools in this server:
             {toolSummaries}
 
-            {(topic != null ? $"Focus particularly on the topic: {topic}" : "")}
+            User Question/Topic: {topic}
 
-            Explain what this server does and give examples of when and how to call its tools.
+            Explain what this server does relative to the user's question and give examples of when and how to call its tools to achieve the user's goal.
             """;
 
         var response = await _chatClient.GetResponseAsync(new MicroAgentChatRequest
@@ -152,8 +161,6 @@ public class RouterService : IRouterService
             Available tools:
             {toolSummaries}
 
-            {(topic != null ? $"\nFocused on topic: {topic}" : "")}
-
             To use these tools, call them through the gateway using the 'call' tool or the prefixed format '{serverName}_toolName'.
             """;
 
@@ -180,8 +187,8 @@ public class RouterService : IRouterService
         {
             Content = new List<ContentBlock>
             {
-                new TextContentBlock 
-                { 
+                new TextContentBlock
+                {
                     Text = $"Global Discovery: This gateway federates multiple MCP servers. Available federated servers are: {serverList}. " +
                            "Use 'how_to_use' with 'server_name' parameter set to one of these names to get detailed documentation."
                 }
